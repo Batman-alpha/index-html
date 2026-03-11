@@ -1,0 +1,1551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>HAMZA EL MERDI — Linguist · Translator · Developer</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Noto+Kufi+Arabic:wght@300;500;700&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+/* ═══════════════════════════════════════
+   RESET & ROOT
+═══════════════════════════════════════ */
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --black:#0a0805;
+  --off-black:#111008;
+  --white:#f0ead8;
+  --paper:#e8dfc5;
+  --ink:#1a1209;
+  --red:#c0392b;
+  --amber:#d4a017;
+  --teal:#1a6b5c;
+  --rust:#b84c22;
+  --muted:#6e6252;
+  --line:rgba(240,234,216,.12);
+  --line2:rgba(240,234,216,.06);
+  --F1:'Bebas Neue',Impact,sans-serif;
+  --F2:'Libre Baskerville',Georgia,serif;
+  --F3:'Space Mono',monospace;
+  --FA:'Noto Kufi Arabic',serif;
+}
+html{font-size:16px;scroll-behavior:smooth}
+body{
+  background:var(--black);color:var(--white);
+  font-family:var(--F2);overflow-x:hidden;
+  cursor:none;
+}
+::selection{background:var(--amber);color:var(--black)}
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-track{background:var(--black)}
+::-webkit-scrollbar-thumb{background:var(--amber)}
+
+/* ═══════════════════════════════════════
+   CURSOR
+═══════════════════════════════════════ */
+#C{position:fixed;z-index:9999;pointer-events:none;mix-blend-mode:difference}
+#C .ring{
+  width:36px;height:36px;border:1.5px solid var(--white);
+  border-radius:50%;position:absolute;transform:translate(-50%,-50%);
+  transition:width .25s,height .25s,border-color .25s;
+}
+#C .dot{
+  width:5px;height:5px;background:var(--white);
+  border-radius:50%;position:absolute;transform:translate(-50%,-50%);
+}
+body.hov #C .ring{width:60px;height:60px;border-color:var(--amber)}
+
+/* ═══════════════════════════════════════
+   GRAIN OVERLAY
+═══════════════════════════════════════ */
+body::before{
+  content:"";position:fixed;inset:0;z-index:9998;pointer-events:none;opacity:.04;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='250' height='250'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='250' height='250' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ═══════════════════════════════════════
+   LOADING SCREEN
+═══════════════════════════════════════ */
+#loader{
+  position:fixed;inset:0;z-index:9990;background:var(--black);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  transition:opacity .8s ease,visibility .8s ease;
+}
+#loader.gone{opacity:0;visibility:hidden}
+.loader-bar{
+  width:0;height:1px;background:var(--amber);
+  transition:width 1.8s cubic-bezier(.4,0,.2,1);
+  max-width:280px;
+}
+.loader-text{font-family:var(--F3);font-size:.65rem;letter-spacing:4px;color:var(--muted);margin-top:16px;text-transform:uppercase}
+.loader-name{font-family:var(--F1);font-size:clamp(3rem,8vw,6rem);letter-spacing:4px;color:var(--white);margin-bottom:28px;opacity:0;animation:fadeUp .6s .2s ease forwards}
+
+/* ═══════════════════════════════════════
+   PROGRESS
+═══════════════════════════════════════ */
+#prog{position:fixed;top:0;left:0;height:2px;z-index:5000;width:0;
+  background:linear-gradient(90deg,var(--amber),var(--red));transition:width .08s}
+
+/* ═══════════════════════════════════════
+   NOISE TICKER
+═══════════════════════════════════════ */
+#ticker{
+  position:fixed;top:0;left:0;right:0;z-index:400;
+  background:var(--amber);overflow:hidden;height:28px;
+  display:flex;align-items:center;
+}
+.ticker-inner{
+  display:flex;gap:0;white-space:nowrap;
+  animation:tickerMove 28s linear infinite;
+}
+.ticker-item{
+  font-family:var(--F1);font-size:.75rem;letter-spacing:3px;
+  color:var(--black);padding:0 32px;
+  border-right:1px solid rgba(0,0,0,.2);
+}
+
+/* ═══════════════════════════════════════
+   NAV
+═══════════════════════════════════════ */
+nav{
+  position:fixed;left:0;right:0;top:28px;z-index:300;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 40px;height:58px;
+  background:rgba(10,8,5,.92);
+  border-bottom:1px solid var(--line);
+  backdrop-filter:blur(18px);
+}
+.nav-sig{
+  font-family:var(--F1);font-size:1.5rem;letter-spacing:3px;
+  color:var(--white);cursor:pointer;user-select:none;
+}
+.nav-sig span{color:var(--amber)}
+.nav-pills{display:flex;gap:4px}
+.npill{
+  padding:6px 16px;border-radius:2px;
+  font-family:var(--F3);font-size:.62rem;letter-spacing:2px;
+  text-transform:uppercase;cursor:pointer;
+  background:transparent;color:var(--muted);border:1px solid transparent;
+  transition:.25s;user-select:none;
+}
+.npill:hover,.npill.on{background:var(--white);color:var(--black);border-color:var(--white)}
+.nav-r{display:flex;gap:6px;align-items:center}
+.lbtn{
+  width:32px;height:32px;border-radius:2px;border:1px solid var(--line);
+  background:transparent;color:var(--muted);font-family:var(--F3);font-size:.62rem;
+  cursor:pointer;transition:.25s;
+}
+.lbtn:hover,.lbtn.on{background:var(--amber);color:var(--black);border-color:var(--amber)}
+.hbg{display:none;flex-direction:column;gap:4px;cursor:pointer;padding:6px}
+.hbg span{width:20px;height:1.5px;background:var(--white);display:block;transition:.3s}
+.hbg.open span:nth-child(1){transform:translateY(5.5px) rotate(45deg)}
+.hbg.open span:nth-child(2){opacity:0}
+.hbg.open span:nth-child(3){transform:translateY(-5.5px) rotate(-45deg)}
+
+/* ═══════════════════════════════════════
+   PAGE SYSTEM
+═══════════════════════════════════════ */
+.pg{
+  position:fixed;inset:0;top:86px;overflow-y:auto;z-index:1;
+  opacity:0;pointer-events:none;
+  transition:opacity .5s ease;
+}
+.pg.on{opacity:1;pointer-events:auto}
+
+/* ═══════════════════════════════════════
+   HOME
+═══════════════════════════════════════ */
+#home{background:var(--black)}
+.h-wrap{min-height:calc(100vh - 86px);display:grid;grid-template-rows:1fr auto;position:relative;overflow:hidden}
+
+/* Diagonal split background */
+.h-bg{position:absolute;inset:0;z-index:0}
+.h-bg-left{
+  position:absolute;left:0;top:0;bottom:0;width:58%;
+  background:var(--off-black);
+  clip-path:polygon(0 0,100% 0,88% 100%,0 100%);
+}
+.h-bg-img{
+  position:absolute;right:0;top:0;bottom:0;width:52%;
+  background:url('https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=1200&q=80') center/cover;
+  opacity:.18;
+  clip-path:polygon(14% 0,100% 0,100% 100%,0 100%);
+}
+.h-bg-lines{position:absolute;inset:0;overflow:hidden}
+.h-bg-lines::before{
+  content:"";position:absolute;top:-200px;left:55%;
+  width:1px;height:200%;
+  background:linear-gradient(180deg,transparent,rgba(212,160,23,.15),transparent);
+  transform:rotate(-8deg);
+}
+
+/* Hero text block */
+.h-content{
+  position:relative;z-index:2;
+  padding:60px 40px 0;
+  display:grid;grid-template-columns:1fr 420px;gap:40px;align-items:center;
+}
+.h-left{}
+.h-eyebrow{
+  display:inline-flex;align-items:center;gap:10px;
+  font-family:var(--F3);font-size:.6rem;letter-spacing:4px;text-transform:uppercase;
+  color:var(--amber);margin-bottom:20px;
+  opacity:0;animation:fadeUp .7s .4s ease forwards;
+}
+.h-eyebrow::before{content:"▶";font-size:.5rem}
+.h-name{
+  font-family:var(--F1);
+  font-size:clamp(5rem,11vw,10rem);
+  line-height:.92;letter-spacing:2px;
+  overflow:hidden;margin-bottom:0;
+}
+.h-name-row{
+  display:block;overflow:hidden;
+  opacity:0;transform:translateY(110%);
+}
+.h-name-row:nth-child(1){animation:slideUp .9s .5s cubic-bezier(.16,1,.3,1) forwards}
+.h-name-row:nth-child(2){animation:slideUp .9s .65s cubic-bezier(.16,1,.3,1) forwards;color:var(--amber)}
+.h-divider{
+  width:0;height:2px;background:var(--amber);
+  margin:18px 0;
+  animation:expandW .8s 1.1s ease forwards;
+}
+.h-title{
+  font-family:var(--F2);font-style:italic;
+  font-size:clamp(1rem,2vw,1.35rem);color:rgba(240,234,216,.65);
+  letter-spacing:.5px;line-height:1.5;
+  opacity:0;animation:fadeUp .7s 1s ease forwards;
+}
+.h-desc{
+  font-family:var(--F3);font-size:.72rem;letter-spacing:.5px;
+  color:var(--muted);line-height:1.8;max-width:480px;
+  margin-top:18px;
+  opacity:0;animation:fadeUp .7s 1.2s ease forwards;
+}
+.h-actions{
+  display:flex;gap:12px;margin-top:28px;flex-wrap:wrap;
+  opacity:0;animation:fadeUp .7s 1.35s ease forwards;
+}
+.btn-fill{
+  padding:13px 28px;font-family:var(--F1);font-size:1rem;letter-spacing:3px;
+  background:var(--amber);color:var(--black);border:none;cursor:pointer;
+  clip-path:polygon(0 0,100% 0,96% 100%,0 100%);
+  transition:.3s;position:relative;overflow:hidden;
+}
+.btn-fill::after{content:"";position:absolute;inset:0;background:rgba(255,255,255,.15);transform:translateX(-100%);transition:.4s}
+.btn-fill:hover{transform:translateY(-3px);box-shadow:0 12px 30px rgba(212,160,23,.25)}
+.btn-fill:hover::after{transform:translateX(100%)}
+.btn-ghost{
+  padding:12px 28px;font-family:var(--F1);font-size:1rem;letter-spacing:3px;
+  background:transparent;color:var(--white);
+  border:1px solid rgba(240,234,216,.3);cursor:pointer;
+  clip-path:polygon(4% 0,100% 0,100% 100%,0 100%);
+  transition:.3s;
+}
+.btn-ghost:hover{background:rgba(240,234,216,.07);border-color:var(--white);transform:translateY(-3px)}
+
+/* Right: floating card */
+.h-right{
+  position:relative;
+  opacity:0;animation:fadeSlide .9s 1s cubic-bezier(.16,1,.3,1) forwards;
+}
+.h-card{
+  background:rgba(240,234,216,.04);
+  border:1px solid rgba(240,234,216,.12);
+  border-top:3px solid var(--amber);
+  padding:28px 24px;
+  position:relative;
+  backdrop-filter:blur(10px);
+}
+.h-card::before{content:"";position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;
+  background:linear-gradient(135deg,rgba(212,160,23,.04),transparent)}
+.hc-label{font-family:var(--F3);font-size:.58rem;letter-spacing:3px;color:var(--amber);text-transform:uppercase;margin-bottom:16px}
+.hc-stat{display:flex;justify-content:space-between;align-items:baseline;padding:10px 0;border-bottom:1px solid var(--line2)}
+.hc-stat:last-of-type{border-bottom:none}
+.hc-stat-name{font-family:var(--F2);font-size:.9rem;color:rgba(240,234,216,.7)}
+.hc-stat-val{font-family:var(--F1);font-size:1.4rem;color:var(--white);letter-spacing:2px}
+.hc-bar-row{margin-top:18px}
+.hc-bar-label{font-family:var(--F3);font-size:.6rem;letter-spacing:2px;color:var(--muted);display:flex;justify-content:space-between;margin-bottom:5px}
+.hc-bar{height:2px;background:rgba(255,255,255,.06);overflow:hidden}
+.hc-fill{height:100%;background:linear-gradient(90deg,var(--amber),var(--rust))}
+.hc-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:18px}
+.hc-tag{
+  font-family:var(--F3);font-size:.58rem;letter-spacing:1.5px;text-transform:uppercase;
+  padding:4px 10px;border:1px solid rgba(212,160,23,.25);color:rgba(212,160,23,.8);
+}
+
+/* Bottom strip */
+.h-strip{
+  position:relative;z-index:2;
+  display:flex;border-top:1px solid var(--line);
+  margin-top:40px;
+}
+.h-strip-item{
+  flex:1;padding:22px 28px;border-right:1px solid var(--line);
+  opacity:0;animation:fadeUp .6s ease forwards;
+}
+.h-strip-item:last-child{border-right:none}
+.h-strip-item:nth-child(1){animation-delay:1.4s}
+.h-strip-item:nth-child(2){animation-delay:1.55s}
+.h-strip-item:nth-child(3){animation-delay:1.7s}
+.h-strip-item:nth-child(4){animation-delay:1.85s}
+.hs-num{font-family:var(--F1);font-size:2.8rem;color:var(--amber);letter-spacing:2px;line-height:1}
+.hs-label{font-family:var(--F3);font-size:.58rem;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-top:4px}
+
+/* Scroll cue */
+.h-scroll{
+  position:absolute;right:40px;bottom:80px;z-index:3;
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  font-family:var(--F3);font-size:.55rem;letter-spacing:3px;text-transform:uppercase;color:var(--muted);
+  animation:bounce 2.5s infinite;cursor:pointer;
+  opacity:0;animation:fadeUp .5s 2s ease forwards,bounce 2.5s 2.5s infinite;
+}
+.h-scroll-line{width:1px;height:44px;background:linear-gradient(var(--amber),transparent)}
+
+/* ═══════════════════════════════════════
+   ABOUT
+═══════════════════════════════════════ */
+#about{background:var(--off-black)}
+.ab-hero{
+  min-height:40vh;
+  background:url('https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=1800&q=80') center/cover fixed;
+  position:relative;display:flex;align-items:flex-end;padding:0 40px 40px;
+  overflow:hidden;
+}
+.ab-hero::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,8,5,.6) 0%,rgba(10,8,5,.9) 100%)}
+.ab-hero-text{position:relative;z-index:2}
+.ab-hero-text h1{font-family:var(--F1);font-size:clamp(3rem,8vw,7rem);letter-spacing:3px;line-height:1}
+.ab-hero-text h1 em{color:var(--amber);font-style:normal}
+.ab-hero-text p{font-family:var(--F3);font-size:.65rem;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:8px}
+
+.ab-body{padding:60px 40px;max-width:1200px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:80px}
+.ab-col{}
+.ab-overline{font-family:var(--F3);font-size:.6rem;letter-spacing:4px;text-transform:uppercase;color:var(--amber);margin-bottom:10px}
+.ab-headline{font-family:var(--F1);font-size:clamp(1.8rem,4vw,3rem);letter-spacing:2px;line-height:1.1;margin-bottom:24px}
+.ab-p{font-family:var(--F2);font-size:.98rem;line-height:1.9;color:rgba(240,234,216,.72);margin-bottom:16px}
+.ab-quote{
+  margin:32px 0;padding:20px 0 20px 24px;border-left:2px solid var(--amber);
+}
+.ab-quote blockquote{font-family:var(--F2);font-style:italic;font-size:1.15rem;line-height:1.7;color:var(--white)}
+.ab-quote cite{font-family:var(--F3);font-size:.6rem;letter-spacing:2px;color:var(--amber);display:block;margin-top:10px;text-transform:uppercase}
+
+/* Timeline — editorial style */
+.ab-timeline{margin-top:8px}
+.tl-row{
+  display:grid;grid-template-columns:90px 1px 1fr;gap:0 20px;
+  margin-bottom:0;
+  opacity:0;transform:translateX(-16px);
+  transition:opacity .6s ease,transform .6s ease;
+}
+.tl-row.vis{opacity:1;transform:translateX(0)}
+.tl-year-col{text-align:right;padding-top:6px}
+.tl-yr{font-family:var(--F1);font-size:1.3rem;color:var(--amber);letter-spacing:1px}
+.tl-loc{font-family:var(--F3);font-size:.56rem;letter-spacing:1px;color:var(--muted);text-transform:uppercase}
+.tl-line-col{display:flex;flex-direction:column;align-items:center;gap:0}
+.tl-circle{width:10px;height:10px;border-radius:50%;background:var(--amber);border:2px solid var(--black);flex-shrink:0;margin-top:8px}
+.tl-connector{flex:1;width:1px;background:rgba(212,160,23,.2);min-height:40px}
+.tl-body-col{padding:4px 0 32px}
+.tl-title{font-family:var(--F2);font-style:italic;font-size:1rem;color:var(--white);margin-bottom:4px}
+.tl-desc{font-family:var(--F3);font-size:.68rem;line-height:1.7;color:var(--muted)}
+
+/* Info cards — brutalist */
+.info-blocks{display:grid;gap:1px;background:var(--line);border:1px solid var(--line)}
+.ib{background:var(--off-black);padding:20px 22px;transition:.3s}
+.ib:hover{background:rgba(240,234,216,.03)}
+.ib-top{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.ib-icon{font-size:1.1rem}
+.ib-title{font-family:var(--F1);font-size:1.1rem;letter-spacing:2px;color:var(--amber)}
+.ib-text{font-family:var(--F3);font-size:.68rem;line-height:1.75;color:var(--muted)}
+
+/* ═══════════════════════════════════════
+   MODULES
+═══════════════════════════════════════ */
+#modules{background:var(--black)}
+.mo-header{padding:60px 40px 0;display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.mo-hed-left h2{font-family:var(--F1);font-size:clamp(3rem,7vw,6rem);letter-spacing:3px;line-height:1;margin-bottom:8px}
+.mo-hed-left h2 span{
+  display:inline-block;
+  -webkit-text-stroke:1px rgba(240,234,216,.25);
+  color:transparent;
+  padding:0 10px;
+}
+.mo-hed-left h2 em{color:var(--amber);font-style:normal}
+.mo-hed-left p{font-family:var(--F3);font-size:.65rem;letter-spacing:2px;color:var(--muted);text-transform:uppercase}
+.mo-controls{display:flex;flex-direction:column;gap:8px;align-items:flex-end}
+.mo-search{
+  background:transparent;border:1px solid var(--line);
+  padding:9px 14px;color:var(--white);font-family:var(--F3);
+  font-size:.7rem;letter-spacing:1px;outline:none;width:240px;
+  transition:.3s;
+}
+.mo-search:focus{border-color:var(--amber)}
+.mo-search::placeholder{color:var(--muted)}
+.mo-filters{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+.mf{
+  font-family:var(--F3);font-size:.58rem;letter-spacing:2px;text-transform:uppercase;
+  padding:5px 12px;border:1px solid var(--line);background:transparent;color:var(--muted);cursor:pointer;transition:.25s;
+}
+.mf:hover,.mf.on{background:var(--amber);color:var(--black);border-color:var(--amber)}
+
+/* Module grid — magazine layout */
+.mo-grid{padding:32px 40px 60px;display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line)}
+.mc{
+  background:var(--black);position:relative;overflow:hidden;cursor:pointer;
+  transition:background .3s;
+  opacity:0;transform:translateY(20px);
+  transition:opacity .5s ease,transform .5s ease,background .3s;
+}
+.mc.vis{opacity:1;transform:translateY(0)}
+.mc:hover{background:var(--off-black)}
+.mc-thumb{
+  width:100%;height:200px;background-size:cover;background-position:center;
+  filter:saturate(.25) brightness(.5);transition:.5s;
+  position:relative;
+}
+.mc:hover .mc-thumb{filter:saturate(.5) brightness(.6);transform:scale(1.04)}
+.mc-num{
+  position:absolute;top:12px;left:12px;
+  font-family:var(--F1);font-size:1.8rem;color:var(--amber);
+  opacity:.7;letter-spacing:1px;
+  z-index:1;
+}
+.mc-badge{
+  position:absolute;bottom:10px;right:10px;
+  font-family:var(--F3);font-size:.56rem;letter-spacing:2px;text-transform:uppercase;
+  padding:3px 8px;background:var(--amber);color:var(--black);z-index:1;
+}
+.mc-body{padding:16px 18px 18px}
+.mc-title{font-family:var(--F1);font-size:1.2rem;letter-spacing:2px;line-height:1.15;margin-bottom:8px;transition:.3s}
+.mc:hover .mc-title{color:var(--amber)}
+.mc-desc{font-family:var(--F3);font-size:.65rem;line-height:1.7;color:var(--muted)}
+.mc-footer{display:flex;justify-content:space-between;align-items:center;margin-top:12px}
+.mc-fav{
+  font-size:.8rem;background:none;border:none;cursor:pointer;color:var(--muted);transition:.3s;padding:3px;
+}
+.mc-fav:hover,.mc.favorited .mc-fav{color:var(--amber)}
+.mc-arrow{font-family:var(--F3);font-size:.6rem;letter-spacing:1px;color:var(--muted)}
+
+/* Module modal */
+.modal-bg{
+  position:fixed;inset:0;z-index:8000;
+  background:rgba(5,3,0,.97);
+  opacity:0;visibility:hidden;transition:.35s;
+  overflow-y:auto;
+}
+.modal-bg.open{opacity:1;visibility:visible}
+.modal-inner{
+  min-height:100vh;display:grid;grid-template-columns:1fr 1fr;
+  transform:translateX(60px);transition:.4s cubic-bezier(.16,1,.3,1);
+}
+.modal-bg.open .modal-inner{transform:translateX(0)}
+.modal-left{
+  background-size:cover;background-position:center;
+  position:relative;min-height:50vh;
+}
+.modal-left::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(5,3,0,.6),transparent)}
+.modal-right{padding:60px 50px;background:var(--off-black)}
+.modal-close{
+  position:fixed;top:20px;right:24px;z-index:9;
+  width:44px;height:44px;background:var(--amber);color:var(--black);
+  border:none;cursor:pointer;font-family:var(--F1);font-size:1.3rem;
+  transition:.3s;clip-path:polygon(0 0,100% 0,96% 100%,4% 100%);
+}
+.modal-close:hover{background:var(--white)}
+.modal-overline{font-family:var(--F3);font-size:.6rem;letter-spacing:3px;text-transform:uppercase;color:var(--amber);margin-bottom:12px}
+.modal-title{font-family:var(--F1);font-size:clamp(2rem,4vw,3.5rem);letter-spacing:3px;line-height:1;margin-bottom:20px}
+.modal-desc{font-family:var(--F2);font-size:.98rem;line-height:1.9;color:rgba(240,234,216,.75);margin-bottom:28px}
+.modal-sect{margin-bottom:22px}
+.modal-sect h4{font-family:var(--F3);font-size:.58rem;letter-spacing:3px;text-transform:uppercase;color:var(--amber);margin-bottom:10px;padding-bottom:4px;border-bottom:1px solid rgba(212,160,23,.2)}
+.modal-tags{display:flex;flex-wrap:wrap;gap:6px}
+.modal-tag{font-family:var(--F3);font-size:.62rem;letter-spacing:1px;padding:5px 11px;border:1px solid var(--line);color:rgba(240,234,216,.6)}
+.modal-fav{
+  display:inline-flex;align-items:center;gap:8px;margin-top:12px;
+  padding:10px 20px;font-family:var(--F1);font-size:.95rem;letter-spacing:2px;
+  background:transparent;border:1px solid var(--line);color:var(--muted);cursor:pointer;transition:.3s;
+}
+.modal-fav:hover,.modal-fav.on{border-color:var(--amber);color:var(--amber)}
+.modal-gallery{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:24px}
+.mg-img{height:70px;background-size:cover;background-position:center;filter:saturate(.3);cursor:pointer;transition:.3s}
+.mg-img:hover{filter:saturate(.8);transform:scale(1.05)}
+
+/* ═══════════════════════════════════════
+   SKILLS
+═══════════════════════════════════════ */
+#skills{background:var(--off-black)}
+.sk-header{padding:60px 40px 40px;border-bottom:1px solid var(--line)}
+.sk-header h2{font-family:var(--F1);font-size:clamp(3rem,7vw,6rem);letter-spacing:4px;line-height:1;overflow:hidden}
+.sk-header h2 .word{display:inline-block;transform:translateY(110%);animation:slideUp .9s cubic-bezier(.16,1,.3,1) forwards;opacity:0}
+.sk-header h2 .word:nth-child(2){animation-delay:.12s;color:var(--amber)}
+.sk-header h2 .word:nth-child(3){animation-delay:.24s}
+.sk-header p{font-family:var(--F3);font-size:.65rem;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-top:8px;opacity:0;animation:fadeUp .6s .5s ease forwards}
+
+.sk-body{display:grid;grid-template-columns:1fr 1fr;gap:0;background:var(--line)}
+.sk-panel{background:var(--off-black);padding:44px 40px}
+.sk-panel-title{font-family:var(--F1);font-size:1.6rem;letter-spacing:3px;margin-bottom:28px;color:var(--amber)}
+.sk-item{margin-bottom:22px;opacity:0;transform:translateY(12px);transition:.5s}
+.sk-item.vis{opacity:1;transform:translateY(0)}
+.sk-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+.sk-name{font-family:var(--F2);font-size:.95rem;color:var(--white)}
+.sk-pct{font-family:var(--F1);font-size:1.1rem;color:var(--amber);letter-spacing:1px}
+.sk-track{height:2px;background:rgba(255,255,255,.06)}
+.sk-fill{height:100%;background:linear-gradient(90deg,var(--amber),var(--rust));width:0;transition:width 1.4s cubic-bezier(.4,0,.2,1)}
+
+.tech-cloud{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.tt{
+  font-family:var(--F3);font-size:.62rem;letter-spacing:1.5px;
+  padding:6px 12px;background:transparent;
+  border:1px solid rgba(240,234,216,.1);color:rgba(240,234,216,.5);
+  transition:.3s;cursor:default;
+}
+.tt:hover{border-color:var(--amber);color:var(--amber)}
+
+.lang-row{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:1px;
+  background:var(--line);border-top:1px solid var(--line);
+}
+.lang-block{
+  background:var(--off-black);padding:24px;text-align:center;
+  transition:.3s;cursor:default;
+}
+.lang-block:hover{background:rgba(212,160,23,.06)}
+.lang-flag{font-size:1.8rem;margin-bottom:6px}
+.lang-name{font-family:var(--F1);font-size:1.4rem;letter-spacing:3px;color:var(--white)}
+.lang-level{font-family:var(--F3);font-size:.6rem;letter-spacing:2px;color:var(--amber);text-transform:uppercase;margin-top:4px}
+
+/* Radar canvas */
+.sk-radar{padding:40px;display:flex;flex-direction:column;align-items:center;background:var(--black);border-top:1px solid var(--line)}
+.sk-radar h3{font-family:var(--F1);font-size:1.4rem;letter-spacing:3px;color:var(--amber);margin-bottom:20px}
+#radar{max-width:300px;width:100%}
+
+/* ═══════════════════════════════════════
+   CONTACT
+═══════════════════════════════════════ */
+#contact{background:var(--black)}
+.ct-split{display:grid;grid-template-columns:1fr 1fr;min-height:calc(100vh - 86px)}
+.ct-left{
+  background:url('https://images.unsplash.com/photo-1457369804613-52c61a468e7d?auto=format&fit=crop&w=1200&q=80') center/cover;
+  position:relative;display:flex;flex-direction:column;justify-content:flex-end;padding:50px 44px;
+}
+.ct-left::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,8,5,.4) 0%,rgba(10,8,5,.92) 100%)}
+.ct-left-content{position:relative;z-index:2}
+.ct-big{font-family:var(--F1);font-size:clamp(3rem,6vw,5.5rem);letter-spacing:3px;line-height:1;margin-bottom:16px}
+.ct-big em{color:var(--amber);font-style:normal;display:block}
+.ct-subtext{font-family:var(--F3);font-size:.68rem;letter-spacing:2px;color:rgba(240,234,216,.55);line-height:1.7;margin-bottom:28px;max-width:360px}
+.ct-items{display:flex;flex-direction:column;gap:14px}
+.ct-row{display:flex;align-items:center;gap:14px}
+.ct-icon-box{
+  width:40px;height:40px;border:1px solid rgba(212,160,23,.3);
+  display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;
+}
+.ct-detail h4{font-family:var(--F3);font-size:.58rem;letter-spacing:2px;text-transform:uppercase;color:var(--amber);margin-bottom:2px}
+.ct-detail p,.ct-detail a{font-family:var(--F2);font-size:.88rem;color:rgba(240,234,216,.7);text-decoration:none}
+.ct-detail a:hover{color:var(--amber)}
+.sb-badge{
+  display:inline-flex;align-items:center;gap:6px;margin-top:20px;
+  font-family:var(--F3);font-size:.6rem;letter-spacing:2px;text-transform:uppercase;
+  padding:6px 14px;border:1px solid rgba(26,107,92,.35);color:#4aab96;
+}
+.sb-dot{width:6px;height:6px;border-radius:50%;background:#4aab96;animation:pulse 2s infinite;flex-shrink:0}
+.sb-badge.err{border-color:rgba(192,57,43,.35);color:#e07060}
+.sb-badge.err .sb-dot{background:#e07060;animation:none}
+
+.ct-right{background:var(--off-black);padding:50px 44px;display:flex;flex-direction:column;justify-content:center}
+.ct-right h3{font-family:var(--F1);font-size:1.6rem;letter-spacing:3px;color:var(--amber);margin-bottom:28px}
+.f-group{margin-bottom:18px}
+.f-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px}
+.f-label{font-family:var(--F3);font-size:.58rem;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;display:block}
+.f-input,.f-sel{
+  width:100%;padding:11px 14px;
+  background:rgba(240,234,216,.03);border:1px solid var(--line);
+  color:var(--white);font-family:var(--F3);font-size:.72rem;letter-spacing:.5px;
+  outline:none;transition:.3s;
+}
+.f-input:focus,.f-sel:focus{border-color:var(--amber);background:rgba(212,160,23,.03)}
+.f-input::placeholder{color:var(--muted);opacity:.6}
+.f-sel option{background:var(--ink)}
+.f-ta{min-height:110px;resize:vertical}
+.f-cnt{font-family:var(--F3);font-size:.58rem;color:var(--muted);text-align:right;margin-top:3px}
+.f-err{font-family:var(--F3);font-size:.62rem;color:var(--red);margin-top:4px;display:none}
+.f-ok{
+  display:none;padding:10px 14px;border:1px solid rgba(26,107,92,.3);
+  background:rgba(26,107,92,.06);color:#4aab96;
+  font-family:var(--F3);font-size:.68rem;letter-spacing:1px;margin-top:8px;
+}
+
+/* ═══════════════════════════════════════
+   MY SPACE / DATABASE
+═══════════════════════════════════════ */
+#myspace{background:var(--off-black)}
+.ms-header{
+  padding:60px 40px 0;
+  display:flex;align-items:flex-end;justify-content:space-between;gap:20px;
+  border-bottom:1px solid var(--line);padding-bottom:32px;flex-wrap:wrap;
+}
+.ms-header h2{font-family:var(--F1);font-size:clamp(2.5rem,6vw,5rem);letter-spacing:3px;line-height:1}
+.ms-header h2 em{color:var(--amber);font-style:normal}
+.ms-cloud{display:flex;align-items:center;gap:10px;font-family:var(--F3);font-size:.62rem;letter-spacing:2px;text-transform:uppercase;color:#4aab96}
+.ms-cloud-dot{width:7px;height:7px;border-radius:50%;background:#4aab96;animation:pulse 2s infinite}
+
+.ms-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:0;background:var(--line);border-bottom:1px solid var(--line)}
+.ms-stat{background:var(--off-black);padding:24px 28px;border-right:1px solid var(--line)}
+.ms-stat:last-child{border-right:none}
+.ms-stat:hover{background:rgba(212,160,23,.04)}
+.ms-sn{font-family:var(--F1);font-size:2.4rem;color:var(--amber);letter-spacing:2px}
+.ms-sl{font-family:var(--F3);font-size:.58rem;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-top:4px}
+
+.ms-tabs{display:flex;border-bottom:1px solid var(--line);padding:0 40px;gap:0}
+.ms-tab{
+  padding:16px 22px;font-family:var(--F3);font-size:.62rem;letter-spacing:2px;
+  text-transform:uppercase;cursor:pointer;color:var(--muted);
+  border-bottom:2px solid transparent;background:none;border-top:none;border-left:none;border-right:none;
+  transition:.25s;
+}
+.ms-tab:hover,.ms-tab.on{color:var(--amber);border-bottom-color:var(--amber)}
+
+.ms-pane{display:none;padding:36px 40px 60px}
+.ms-pane.on{display:block}
+.ms-empty{text-align:center;padding:60px;color:var(--muted);font-family:var(--F3);font-size:.72rem;letter-spacing:2px;text-transform:uppercase}
+
+/* Favorites grid */
+.fav-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:1px;background:var(--line)}
+.fv{background:var(--off-black);overflow:hidden;transition:.3s}
+.fv:hover{background:rgba(240,234,216,.03)}
+.fv-thumb{height:120px;background-size:cover;background-position:center;filter:saturate(.25)}
+.fv-body{padding:14px 16px}
+.fv-title{font-family:var(--F1);font-size:1rem;letter-spacing:2px;margin-bottom:5px;color:var(--amber)}
+.fv-desc{font-family:var(--F3);font-size:.62rem;color:var(--muted);line-height:1.65;margin-bottom:10px}
+.fv-rm{background:none;border:1px solid rgba(192,57,43,.25);color:rgba(192,57,43,.7);padding:4px 10px;font-family:var(--F3);font-size:.58rem;letter-spacing:1px;cursor:pointer;transition:.3s}
+.fv-rm:hover{background:rgba(192,57,43,.08)}
+
+/* Messages */
+.msg-grid{display:grid;gap:1px;background:var(--line)}
+.mi{background:var(--off-black);padding:18px 22px;transition:.3s;position:relative}
+.mi:hover{background:rgba(240,234,216,.02)}
+.mi-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px}
+.mi-from{font-family:var(--F1);font-size:1rem;letter-spacing:2px;color:var(--amber)}
+.mi-time{font-family:var(--F3);font-size:.58rem;letter-spacing:1px;color:var(--muted);white-space:nowrap}
+.mi-subj{font-family:var(--F3);font-size:.62rem;letter-spacing:1px;color:var(--teal);margin-bottom:5px;text-transform:uppercase}
+.mi-body{font-family:var(--F2);font-size:.88rem;color:rgba(240,234,216,.6);line-height:1.6}
+.mi-src{margin-left:8px;font-family:var(--F3);font-size:.56rem;letter-spacing:1px;padding:2px 7px;border:1px solid}
+.mi-src.cl{border-color:rgba(26,107,92,.3);color:#4aab96}
+.mi-src.lo{border-color:rgba(212,160,23,.25);color:var(--amber)}
+.mi-del{position:absolute;top:16px;right:16px;background:none;border:none;cursor:pointer;color:var(--muted);font-size:.85rem;transition:.3s;padding:3px}
+.mi-del:hover{color:var(--red)}
+
+/* History */
+.hist-list{display:grid;gap:1px;background:var(--line)}
+.hi{background:var(--off-black);padding:12px 18px;display:flex;align-items:center;gap:14px;transition:.3s}
+.hi:hover{background:rgba(240,234,216,.02)}
+.hi-tick{width:5px;height:5px;border-radius:50%;background:var(--amber);flex-shrink:0}
+.hi-text{flex:1;font-family:var(--F3);font-size:.68rem;color:rgba(240,234,216,.7)}
+.hi-t{font-family:var(--F3);font-size:.6rem;color:var(--muted)}
+
+/* Analytics */
+.an-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1px;background:var(--line);margin-bottom:1px}
+.an-card{background:var(--off-black);padding:20px 24px}
+.an-n{font-family:var(--F1);font-size:2.2rem;color:var(--amber);letter-spacing:2px}
+.an-l{font-family:var(--F3);font-size:.58rem;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-top:3px}
+.an-tr{font-family:var(--F3);font-size:.62rem;color:#4aab96;margin-top:3px}
+.an-bars{background:var(--off-black);padding:24px 28px}
+.an-bars h4{font-family:var(--F1);font-size:1.1rem;letter-spacing:2px;color:var(--amber);margin-bottom:18px}
+.an-row{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.an-rl{width:120px;font-family:var(--F3);font-size:.62rem;letter-spacing:1px;color:var(--muted);flex-shrink:0}
+.an-rg{flex:1;height:3px;background:rgba(255,255,255,.05)}
+.an-rf{height:100%;background:linear-gradient(90deg,var(--amber),var(--rust));transition:width 1.3s ease}
+.an-rv{width:28px;text-align:right;font-family:var(--F1);font-size:.9rem;color:var(--amber)}
+
+/* ═══════════════════════════════════════
+   FOOTER
+═══════════════════════════════════════ */
+.ft{
+  background:var(--black);border-top:1px solid var(--line);
+  padding:24px 40px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;
+}
+.ft-left{font-family:var(--F1);font-size:.9rem;letter-spacing:2px;color:var(--muted)}
+.ft-left em{color:var(--amber);font-style:normal}
+.ft-links{display:flex;gap:20px}
+.ft-link{font-family:var(--F3);font-size:.58rem;letter-spacing:2px;text-transform:uppercase;color:var(--muted);text-decoration:none;cursor:pointer;transition:.25s}
+.ft-link:hover{color:var(--amber)}
+
+/* TOAST */
+#toast{
+  position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(50px);
+  background:var(--amber);color:var(--black);padding:10px 24px;
+  font-family:var(--F1);font-size:1rem;letter-spacing:2px;
+  z-index:9999;opacity:0;transition:.3s;pointer-events:none;
+  clip-path:polygon(0 0,100% 0,97% 100%,3% 100%);
+}
+#toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+
+/* BACK TO TOP */
+#btt{
+  position:fixed;bottom:28px;right:28px;z-index:500;
+  width:44px;height:44px;background:var(--amber);color:var(--black);
+  border:none;cursor:pointer;font-family:var(--F1);font-size:1.2rem;
+  opacity:0;pointer-events:none;transition:.3s;
+  clip-path:polygon(0 0,100% 0,96% 100%,4% 100%);
+}
+#btt.show{opacity:1;pointer-events:auto}
+#btt:hover{background:var(--white);transform:translateY(-3px)}
+
+/* ═══════════════════════════════════════
+   RTL / ARABIC
+═══════════════════════════════════════ */
+body.ar{font-family:var(--FA),serif;direction:rtl}
+body.ar .ab-quote{border-left:none;border-right:2px solid var(--amber);padding-left:0;padding-right:24px}
+body.ar .tl-row{grid-template-columns:1fr 1px 90px;transform:translateX(16px)}
+body.ar .tl-year-col{text-align:left}
+body.ar .tl-body-col{padding:4px 0 32px}
+body.ar .ms-tabs{padding:0 40px}
+body.ar .ct-left{clip-path:none}
+body.ar .modal-close{right:auto;left:24px}
+body.ar .modal-inner{transform:translateX(-60px)}
+body.ar .modal-bg.open .modal-inner{transform:translateX(0)}
+
+/* ═══════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════ */
+@media(max-width:1100px){
+  .h-content{grid-template-columns:1fr}
+  .h-right{display:none}
+  .mo-grid{grid-template-columns:repeat(2,1fr)}
+  .ab-body{grid-template-columns:1fr;gap:40px}
+}
+@media(max-width:900px){
+  .sk-body{grid-template-columns:1fr}
+  .ct-split{grid-template-columns:1fr}
+  .ct-left{min-height:300px}
+  .modal-inner{grid-template-columns:1fr}
+  .ms-stats{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:768px){
+  #C{display:none}body{cursor:auto}
+  nav{padding:0 16px}
+  .nav-pills{display:none}
+  .nav-pills.open{display:flex;flex-direction:column;position:fixed;top:86px;left:0;right:0;background:rgba(10,8,5,.99);padding:16px;gap:4px;z-index:299;border-bottom:1px solid var(--line)}
+  .hbg{display:flex}
+  .h-content,.ab-body,.mo-header,.mo-grid,.ms-header{padding-left:16px;padding-right:16px}
+  .sk-header,.ct-left,.ct-right,.ms-pane{padding:36px 16px}
+  .mo-grid{grid-template-columns:1fr}
+  .f-row{grid-template-columns:1fr}
+  .lang-row{grid-template-columns:1fr}
+  .ms-stats{grid-template-columns:1fr 1fr}
+  .ft{padding:20px 16px;flex-direction:column;align-items:flex-start;gap:12px}
+  .ms-tabs{padding:0 16px;overflow-x:auto}
+  .h-strip{flex-direction:column}
+  .h-strip-item{border-right:none;border-bottom:1px solid var(--line)}
+}
+@media(max-width:480px){
+  .ms-stats{grid-template-columns:1fr}
+  .an-grid{grid-template-columns:1fr 1fr}
+}
+
+/* ═══════════════════════════════════════
+   KEYFRAMES
+═══════════════════════════════════════ */
+@keyframes fadeUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideUp{from{opacity:0;transform:translateY(110%)}to{opacity:1;transform:translateY(0)}}
+@keyframes expandW{from{width:0}to{width:72px}}
+@keyframes fadeSlide{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
+@keyframes tickerMove{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.7)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+</style>
+</head>
+<body>
+
+<!-- CURSOR -->
+<div id="C"><div class="ring"></div><div class="dot"></div></div>
+
+<!-- PROGRESS -->
+<div id="prog"></div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- BACK TO TOP -->
+<button id="btt" onclick="btt()">↑</button>
+
+<!-- ═══════════════════════════════════════
+     LOADER
+═══════════════════════════════════════ -->
+<div id="loader">
+  <div class="loader-name">H. EL MERDI</div>
+  <div class="loader-bar" id="lbar"></div>
+  <div class="loader-text">Loading Portfolio...</div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     TICKER
+═══════════════════════════════════════ -->
+<div id="ticker">
+  <div class="ticker-inner" id="tickerInner"></div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     NAV
+═══════════════════════════════════════ -->
+<nav id="nav">
+  <div class="nav-sig" onclick="go('home')">H.<span>E</span>M</div>
+  <div class="nav-pills" id="navPills">
+    <button class="npill on" onclick="go('home')">Home</button>
+    <button class="npill" onclick="go('about')">About</button>
+    <button class="npill" onclick="go('modules')">Modules</button>
+    <button class="npill" onclick="go('skills')">Skills</button>
+    <button class="npill" onclick="go('contact')">Contact</button>
+    <button class="npill" onclick="go('myspace')">My Space <span id="fbadge" style="color:var(--amber);margin-left:3px">★0</span></button>
+  </div>
+  <div class="nav-r">
+    <div style="display:flex;gap:4px">
+      <button class="lbtn on" onclick="lang('en')">EN</button>
+      <button class="lbtn" onclick="lang('fr')">FR</button>
+      <button class="lbtn" onclick="lang('ar')">ع</button>
+    </div>
+    <div class="hbg" id="hbg" onclick="toggleHbg()"><span></span><span></span><span></span></div>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════════
+     HOME
+═══════════════════════════════════════ -->
+<section class="pg on" id="home">
+  <div class="h-wrap">
+    <div class="h-bg">
+      <div class="h-bg-left"></div>
+      <div class="h-bg-img"></div>
+      <div class="h-bg-lines"></div>
+    </div>
+    <div class="h-content">
+      <div class="h-left">
+        <div class="h-eyebrow" data-k="tag">Linguist · Translator · Developer · Youssoufia, MA</div>
+        <div class="h-name">
+          <span class="h-name-row">HAMZA</span>
+          <span class="h-name-row">EL MERDI</span>
+        </div>
+        <div class="h-divider"></div>
+        <div class="h-title" data-k="htitle">Licence in English Studies — Linguistics<br>Université Cadi Ayyad, Marrakech</div>
+        <p class="h-desc" data-k="hdesc">Graduate linguist specializing in the architecture of language — from phonology to discourse. Passionate about translation theory, literary criticism, and the digital tools that bridge human languages.</p>
+        <div class="h-actions">
+          <button class="btn-fill" onclick="go('modules')" data-k="btn1">EXPLORE MODULES</button>
+          <button class="btn-ghost" onclick="go('contact')" data-k="btn2">CONTACT ME</button>
+        </div>
+      </div>
+      <div class="h-right">
+        <div class="h-card">
+          <div class="hc-label" data-k="hc_label">Academic Profile · 2025</div>
+          <div class="hc-stat"><span class="hc-stat-name" data-k="hcs1">Field</span><span class="hc-stat-val">Linguistics</span></div>
+          <div class="hc-stat"><span class="hc-stat-name" data-k="hcs2">Degree</span><span class="hc-stat-val">LICENCE</span></div>
+          <div class="hc-stat"><span class="hc-stat-name" data-k="hcs3">University</span><span class="hc-stat-val">UCA</span></div>
+          <div class="hc-stat"><span class="hc-stat-name" data-k="hcs4">Modules</span><span class="hc-stat-val">14</span></div>
+          <div class="hc-bar-row">
+            <div class="hc-bar-label"><span data-k="hcb_lang">Languages</span><span>3</span></div>
+            <div class="hc-bar"><div class="hc-fill" style="width:100%"></div></div>
+          </div>
+          <div class="hc-bar-row">
+            <div class="hc-bar-label"><span data-k="hcb_ling">Linguistics</span><span>93%</span></div>
+            <div class="hc-bar"><div class="hc-fill" style="width:93%"></div></div>
+          </div>
+          <div class="hc-bar-row">
+            <div class="hc-bar-label"><span data-k="hcb_trans">Translation</span><span>88%</span></div>
+            <div class="hc-bar"><div class="hc-fill" style="width:88%"></div></div>
+          </div>
+          <div class="hc-bar-row">
+            <div class="hc-bar-label"><span data-k="hcb_web">Web Dev</span><span>72%</span></div>
+            <div class="hc-bar"><div class="hc-fill" style="width:72%"></div></div>
+          </div>
+          <div class="hc-tags">
+            <span class="hc-tag">IPA</span><span class="hc-tag">CDA</span><span class="hc-tag">EFL</span>
+            <span class="hc-tag">NLP</span><span class="hc-tag">HTML</span><span class="hc-tag">JS</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="h-strip">
+      <div class="h-strip-item"><div class="hs-num" id="sn1">0</div><div class="hs-label" data-k="ss1">Core Modules</div></div>
+      <div class="h-strip-item"><div class="hs-num" id="sn2">0</div><div class="hs-label" data-k="ss2">Languages Spoken</div></div>
+      <div class="h-strip-item"><div class="hs-num" id="sn3">0</div><div class="hs-label" data-k="ss3">Page Visits</div></div>
+      <div class="h-strip-item"><div class="hs-num">∞</div><div class="hs-label" data-k="ss4">Intellectual Curiosity</div></div>
+    </div>
+    <div class="h-scroll" onclick="go('about')">
+      <div class="h-scroll-line"></div>
+      <span data-k="scroll">Scroll</span>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════
+     ABOUT
+═══════════════════════════════════════ -->
+<section class="pg" id="about">
+  <div class="ab-hero">
+    <div class="ab-hero-text">
+      <p data-k="ab_over">About · Hamza El Merdi</p>
+      <h1>FROM <em>YOUSSOUFIA</em><br>TO THE WORLD OF WORDS</h1>
+    </div>
+  </div>
+  <div class="ab-body">
+    <div class="ab-col">
+      <div class="ab-overline" data-k="ab_over2">My Story</div>
+      <h2 class="ab-headline" data-k="ab_h">Language, Literature &amp; Code</h2>
+      <p class="ab-p" data-k="ab_p1">I am Hamza El Merdi, born and raised in Youssoufia, Morocco — a city that shaped my sense of community, language, and identity. I pursued my higher education at Université Cadi Ayyad in Marrakech, where I earned a Licence in English Studies with a specialization in Linguistics.</p>
+      <p class="ab-p" data-k="ab_p2">My academic journey gave me a deep understanding of language as a system — from the smallest phonological units to the broad patterns of discourse and pragmatics. I am particularly fascinated by how languages encode meaning, culture, and power.</p>
+      <p class="ab-p" data-k="ab_p3">Beyond linguistics, I have developed a genuine passion for web development and programming. I believe combining language expertise with digital skills opens new frontiers — in natural language processing, educational technology, and cross-cultural digital communication.</p>
+      <div class="ab-quote">
+        <blockquote data-k="ab_quote">"The limits of my language mean the limits of my world."</blockquote>
+        <cite>— Ludwig Wittgenstein · Tractatus Logico-Philosophicus</cite>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">
+        <button class="btn-fill" onclick="go('modules')" data-k="btn_mods">VIEW MODULES</button>
+        <button class="btn-ghost" onclick="go('skills')" data-k="btn_sk">MY SKILLS</button>
+      </div>
+    </div>
+    <div class="ab-col">
+      <div class="info-blocks">
+        <div class="ib reveal-x">
+          <div class="ib-top"><span class="ib-icon">📖</span><span class="ib-title" data-k="ib1t">Linguistic Expertise</span></div>
+          <p class="ib-text" data-k="ib1d">Deep study of phonology, morphology, syntax, semantics, and pragmatics. Language understood not just as communication but as a cognitive and cultural system.</p>
+        </div>
+        <div class="ib reveal-x">
+          <div class="ib-top"><span class="ib-icon">🌍</span><span class="ib-title" data-k="ib2t">Translation &amp; Mediation</span></div>
+          <p class="ib-text" data-k="ib2d">Trained in translation theory and practice — bridging Arabic, French, and English while preserving meaning, register, and cultural nuance.</p>
+        </div>
+        <div class="ib reveal-x">
+          <div class="ib-top"><span class="ib-icon">✍️</span><span class="ib-title" data-k="ib3t">Literary Studies</span></div>
+          <p class="ib-text" data-k="ib3d">Critical engagement with English and world literature — from Renaissance drama to postcolonial fiction. Texts as mirrors of society and history.</p>
+        </div>
+        <div class="ib reveal-x">
+          <div class="ib-top"><span class="ib-icon">💻</span><span class="ib-title" data-k="ib4t">Technology &amp; Language</span></div>
+          <p class="ib-text" data-k="ib4d">Self-taught in HTML, CSS, JavaScript. Interested in NLP, corpus linguistics tools, and building digital platforms for language learners and researchers.</p>
+        </div>
+      </div>
+      <div class="ab-timeline" style="margin-top:36px">
+        <div class="tl-row reveal-x">
+          <div class="tl-year-col"><div class="tl-yr">—</div><div class="tl-loc">Youssoufia</div></div>
+          <div class="tl-line-col"><div class="tl-circle"></div><div class="tl-connector"></div></div>
+          <div class="tl-body-col"><div class="tl-title" data-k="tl1t">Origins &amp; Baccalauréat</div><div class="tl-desc" data-k="tl1d">Born and raised in Youssoufia — a foundation built on curiosity, language, and community.</div></div>
+        </div>
+        <div class="tl-row reveal-x">
+          <div class="tl-year-col"><div class="tl-yr">UCA</div><div class="tl-loc">Marrakech</div></div>
+          <div class="tl-line-col"><div class="tl-circle"></div><div class="tl-connector"></div></div>
+          <div class="tl-body-col"><div class="tl-title" data-k="tl2t">Licence — English Studies</div><div class="tl-desc" data-k="tl2d">Université Cadi Ayyad — specializing in Linguistics, Translation, Literary Criticism, and Didactics.</div></div>
+        </div>
+        <div class="tl-row reveal-x">
+          <div class="tl-year-col"><div class="tl-yr" style="color:#4aab96">DEV</div><div class="tl-loc">Self-taught</div></div>
+          <div class="tl-line-col"><div class="tl-circle" style="background:#4aab96"></div><div class="tl-connector"></div></div>
+          <div class="tl-body-col"><div class="tl-title" data-k="tl3t">Web Development</div><div class="tl-desc" data-k="tl3d">HTML, CSS, JavaScript, Supabase — bridging language expertise with digital tools.</div></div>
+        </div>
+        <div class="tl-row reveal-x">
+          <div class="tl-year-col"><div class="tl-yr" style="color:var(--teal)">NOW</div><div class="tl-loc">Youssoufia</div></div>
+          <div class="tl-line-col"><div class="tl-circle" style="background:var(--teal)"></div></div>
+          <div class="tl-body-col"><div class="tl-title" data-k="tl4t">Research &amp; Digital Projects</div><div class="tl-desc" data-k="tl4d">Pursuing advanced linguistic research while developing web and NLP-oriented projects.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="ft">
+    <div class="ft-left">HAMZA <em>EL MERDI</em> · LINGUIST · UCA MARRAKECH</div>
+    <div class="ft-links">
+      <span class="ft-link" onclick="go('modules')">Modules</span>
+      <span class="ft-link" onclick="go('skills')">Skills</span>
+      <span class="ft-link" onclick="go('contact')">Contact</span>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════
+     MODULES
+═══════════════════════════════════════ -->
+<section class="pg" id="modules">
+  <div class="mo-header">
+    <div class="mo-hed-left">
+      <h2><em>FIELDS</em> <span>OF</span> STUDY</h2>
+      <p data-k="mod_sub">14 academic modules · English Studies · UCA Marrakech</p>
+    </div>
+    <div class="mo-controls">
+      <input class="mo-search" id="moSearch" type="text" placeholder="Search modules..." oninput="searchMods()"/>
+      <div class="mo-filters">
+        <button class="mf on" onclick="filterMod('all',this)" data-k="fall">All</button>
+        <button class="mf" onclick="filterMod('Linguistics',this)">Linguistics</button>
+        <button class="mf" onclick="filterMod('Translation',this)">Translation</button>
+        <button class="mf" onclick="filterMod('Literature',this)">Literature</button>
+        <button class="mf" onclick="filterMod('Research',this)">Research</button>
+        <button class="mf" onclick="filterMod('Technology',this)">Technology</button>
+      </div>
+    </div>
+  </div>
+  <div class="mo-grid" id="moGrid"></div>
+  <div class="ft"><div class="ft-left">HAMZA <em>EL MERDI</em> · <span id="mcount" style="color:var(--amber)">14</span> MODULES</div></div>
+</section>
+
+<!-- Module modal -->
+<div class="modal-bg" id="mModal" onclick="handleModalBg(event)">
+  <button class="modal-close" onclick="closeMod()">✕</button>
+  <div class="modal-inner" id="mModalInner"></div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     SKILLS
+═══════════════════════════════════════ -->
+<section class="pg" id="skills">
+  <div class="sk-header">
+    <h2>
+      <span class="word">LANGUAGE</span>
+      <span class="word">&</span>
+      <span class="word">CODE</span>
+    </h2>
+    <p data-k="sk_sub">A blend of humanistic scholarship and digital craftsmanship</p>
+  </div>
+  <div class="sk-body">
+    <div class="sk-panel" id="skPanel1">
+      <div class="sk-panel-title" data-k="sk_ling_title">Language Sciences</div>
+      <div class="sk-item"><div class="sk-row"><span class="sk-name" data-k="sk1">General Linguistics</span><span class="sk-pct">93%</span></div><div class="sk-track"><div class="sk-fill" style="--w:93%"></div></div></div>
+      <div class="sk-item"><div class="sk-row"><span class="sk-name" data-k="sk2">Translation Theory</span><span class="sk-pct">88%</span></div><div class="sk-track"><div class="sk-fill" style="--w:88%"></div></div></div>
+      <div class="sk-item"><div class="sk-row"><span class="sk-name" data-k="sk3">Literary Criticism</span><span class="sk-pct">85%</span></div><div class="sk-track"><div class="sk-fill" style="--w:85%"></div></div></div>
+      <div class="sk-item"><div class="sk-row"><span class="sk-name" data-k="sk4">Discourse Analysis</span><span class="sk-pct">82%</span></div><div class="sk-track"><div class="sk-fill" style="--w:82%"></div></div></div>
+      <div class="sk-item"><div class="sk-row"><span class="sk-name" data-k="sk5">Didactics / EFL</span><span class="sk-pct">87%</span></div><div class="sk-track"><div class="sk-fill" style="--w:87%"></div></div></div>
+      <div class="sk-item"><div class="sk-row"><span class="sk-name" data-k="sk6">Academic Research</span><span class="sk-pct">84%</span></div><div class="sk-track"><div class="sk-fill" style="--w:84%"></div></div></div>
+      <div class="sk-item"><div class="sk-row"><span class="sk-name" data-k="sk7">Academic Writing</span><span class="sk-pct">90%</span></div><div class="sk-track"><div class="sk-fill" style="--w:90%"></div></div></div>
+    </div>
+    <div class="sk-panel">
+      <div class="sk-panel-title" data-k="sk_tech_title">Digital Skills</div>
+      <div class="sk-item"><div class="sk-row"><span class="sk-name">HTML5 &amp; CSS3</span><span class="sk-pct">78%</span></div><div class="sk-track"><div class="sk-fill" style="--w:78%"></div></div></div>
+      <div class="sk-item"><div class="sk-row"><span class="sk-name">JavaScript</span><span class="sk-pct">65%</span></div><div class="sk-track"><div class="sk-fill" style="--w:65%"></div></div></div>
+      <div class="sk-item"><div class="sk-row"><span class="sk-name" data-k="sk8">Responsive Design</span><span class="sk-pct">72%</span></div><div class="sk-track"><div class="sk-fill" style="--w:72%"></div></div></div>
+      <div class="sk-item"><div class="sk-row"><span class="sk-name">Python (Basics)</span><span class="sk-pct">55%</span></div><div class="sk-track"><div class="sk-fill" style="--w:55%"></div></div></div>
+      <div class="sk-item"><div class="sk-row"><span class="sk-name" data-k="sk9">Corpus Linguistics Tools</span><span class="sk-pct">70%</span></div><div class="sk-track"><div class="sk-fill" style="--w:70%"></div></div></div>
+      <div style="margin-top:20px">
+        <div class="sk-panel-title" style="font-size:1.1rem;margin-bottom:14px" data-k="sk_tools_t">Tools</div>
+        <div class="tech-cloud">
+          <span class="tt">AntConc</span><span class="tt">Zotero</span><span class="tt">LaTeX</span>
+          <span class="tt">VS Code</span><span class="tt">ATLAS.ti</span><span class="tt">Supabase</span>
+          <span class="tt">Git</span><span class="tt">MS Word</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="lang-row">
+    <div class="lang-block"><div class="lang-flag">🇲🇦</div><div class="lang-name" data-k="l1">ARABIC</div><div class="lang-level" data-k="l1l">Native</div></div>
+    <div class="lang-block"><div class="lang-flag">🇬🇧</div><div class="lang-name" data-k="l2">ENGLISH</div><div class="lang-level" data-k="l2l">Advanced / Licence</div></div>
+    <div class="lang-block"><div class="lang-flag">🇫🇷</div><div class="lang-name" data-k="l3">FRENCH</div><div class="lang-level" data-k="l3l">Fluent</div></div>
+  </div>
+  <div class="sk-radar">
+    <h3>ACADEMIC RADAR</h3>
+    <canvas id="radar" width="300" height="300"></canvas>
+  </div>
+  <div class="ft"><div class="ft-left">HAMZA <em>EL MERDI</em> · LANGUAGE &amp; CODE</div></div>
+</section>
+
+<!-- ═══════════════════════════════════════
+     CONTACT
+═══════════════════════════════════════ -->
+<section class="pg" id="contact">
+  <div class="ct-split">
+    <div class="ct-left">
+      <div class="ct-left-content">
+        <div class="ct-big">LET'S <em>CONNECT</em></div>
+        <p class="ct-subtext" data-k="ct_sub">For research collaborations, translation projects, web development, or just a conversation about language — get in touch.</p>
+        <div class="ct-items">
+          <div class="ct-row"><div class="ct-icon-box">✉</div><div class="ct-detail"><h4 data-k="ct_el">Email</h4><a href="mailto:hamza.elmerdi@uca.ac.ma">hamza.elmerdi@uca.ac.ma</a></div></div>
+          <div class="ct-row"><div class="ct-icon-box">📍</div><div class="ct-detail"><h4 data-k="ct_ll">Location</h4><p>Youssoufia, Morocco 🇲🇦</p></div></div>
+          <div class="ct-row"><div class="ct-icon-box">🎓</div><div class="ct-detail"><h4 data-k="ct_ul">University</h4><p>Université Cadi Ayyad, Marrakech</p></div></div>
+          <div class="ct-row"><div class="ct-icon-box">💻</div><div class="ct-detail"><h4 data-k="ct_fl">Also Into</h4><p>Web Dev · NLP · Programming</p></div></div>
+        </div>
+        <div class="sb-badge" id="sbBadge"><div class="sb-dot"></div><span id="sbTxt">Connecting to Supabase...</span></div>
+      </div>
+    </div>
+    <div class="ct-right">
+      <h3 data-k="ct_form_h">SEND A MESSAGE</h3>
+      <form onsubmit="sendMsg(event)" id="cForm">
+        <div class="f-row">
+          <div><label class="f-label" data-k="fl_name">Name</label><input class="f-input" id="fn" type="text" placeholder="Your name" required/></div>
+          <div><label class="f-label" data-k="fl_email">Email</label><input class="f-input" id="fe" type="email" placeholder="you@email.com" required/></div>
+        </div>
+        <div class="f-group"><label class="f-label" data-k="fl_subj">Subject</label>
+          <select class="f-input f-sel" id="fs">
+            <option value="" data-k="fo1">Select...</option>
+            <option value="research" data-k="fo2">Research Collaboration</option>
+            <option value="translation" data-k="fo3">Translation Project</option>
+            <option value="teaching" data-k="fo4">Teaching / EFL</option>
+            <option value="web" data-k="fo5">Web / Tech</option>
+            <option value="other" data-k="fo6">Other</option>
+          </select>
+        </div>
+        <div class="f-group"><label class="f-label" data-k="fl_msg">Message</label>
+          <textarea class="f-input f-ta" id="fm" placeholder="Your message..." oninput="updateCnt()" required></textarea>
+          <div class="f-cnt"><span id="fCnt">0</span>/500</div>
+        </div>
+        <div class="f-err" id="fErr"></div>
+        <button type="submit" class="btn-fill" id="fBtn" data-k="f_send">SEND MESSAGE</button>
+        <div class="f-ok" id="fOk" data-k="f_ok">✓ Message sent! I will reply soon.</div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════
+     MY SPACE
+═══════════════════════════════════════ -->
+<section class="pg" id="myspace">
+  <div class="ms-header">
+    <h2>MY <em>SPACE</em></h2>
+    <div class="ms-cloud"><div class="ms-cloud-dot"></div><span id="msOnline">Connecting...</span></div>
+  </div>
+  <div class="ms-stats">
+    <div class="ms-stat"><div class="ms-sn" id="msFavN">0</div><div class="ms-sl" data-k="ms1">Favorites</div></div>
+    <div class="ms-stat"><div class="ms-sn" id="msMsgN">0</div><div class="ms-sl" data-k="ms2">Messages</div></div>
+    <div class="ms-stat"><div class="ms-sn" id="msViewN">0</div><div class="ms-sl" data-k="ms3">Module Views</div></div>
+    <div class="ms-stat"><div class="ms-sn" id="msVisitN">0</div><div class="ms-sl" data-k="ms4">Page Visits</div></div>
+  </div>
+  <div class="ms-tabs">
+    <button class="ms-tab on" onclick="msTab('favs',this)">★ Favorites</button>
+    <button class="ms-tab" onclick="msTab('msgs',this)">✉ Messages</button>
+    <button class="ms-tab" onclick="msTab('hist',this)">📋 History</button>
+    <button class="ms-tab" onclick="msTab('analytics',this)">📊 Analytics</button>
+  </div>
+  <div class="ms-pane on" id="pane-favs"><div class="fav-grid" id="favGrid"></div></div>
+  <div class="ms-pane" id="pane-msgs">
+    <div style="display:flex;justify-content:space-between;margin-bottom:16px;align-items:center">
+      <span style="font-family:var(--F3);font-size:.62rem;letter-spacing:1px;color:var(--muted)">Messages from contact form</span>
+      <button class="btn-ghost" style="padding:7px 16px;font-size:.72rem" onclick="clearMsgs()">CLEAR LOCAL</button>
+    </div>
+    <div class="msg-grid" id="msgGrid"></div>
+  </div>
+  <div class="ms-pane" id="pane-hist">
+    <div style="display:flex;justify-content:space-between;margin-bottom:16px;align-items:center">
+      <span style="font-family:var(--F3);font-size:.62rem;letter-spacing:1px;color:var(--muted)">Your activity</span>
+      <button class="btn-ghost" style="padding:7px 16px;font-size:.72rem" onclick="clearHist()">CLEAR</button>
+    </div>
+    <div class="hist-list" id="histList"></div>
+  </div>
+  <div class="ms-pane" id="pane-analytics">
+    <div class="an-grid" id="anGrid"></div>
+    <div class="an-bars" style="margin-top:1px">
+      <h4>MODULES BY FIELD</h4>
+      <div id="anBars"></div>
+    </div>
+  </div>
+  <div class="ft"><div class="ft-left">HAMZA <em>EL MERDI</em> · PERSONAL DATABASE</div></div>
+</section>
+
+<!-- ════════════════════════════════════════════════
+     JAVASCRIPT
+════════════════════════════════════════════════ -->
+<script>
+/* ─ Supabase ─ */
+const SB_URL='https://qaiapgihigzzbpjclilz.supabase.co';
+const SB_KEY='sb_publishable_CDjyYc8a9c8YQgq3HRzqEQ_FiCNKgha';
+let sb=null,sbOk=false;
+async function initSB(){
+  try{
+    sb=window.supabase.createClient(SB_URL,SB_KEY);
+    const{error}=await sb.from('messages').select('id').limit(1);
+    if(error)throw error;
+    sbOk=true;setSbUI(true);
+  }catch{sbOk=false;setSbUI(false);}
+}
+function setSbUI(ok){
+  const b=document.getElementById('sbBadge'),t=document.getElementById('sbTxt');
+  const mo=document.getElementById('msOnline');
+  if(b){b.className='sb-badge'+(ok?'':' err');}
+  if(t)t.textContent=ok?'⚡ Supabase connected — messages sync to cloud':'⚠ Offline — messages saved locally';
+  if(mo)mo.textContent=ok?'☁ Cloud + Local':'💾 Local Only';
+}
+
+/* ─ Local DB ─ */
+const DB={
+  g(k,d=null){try{const v=localStorage.getItem('hem_'+k);return v?JSON.parse(v):d}catch{return d}},
+  s(k,v){try{localStorage.setItem('hem_'+k,JSON.stringify(v))}catch{}},
+  favs(){return this.g('fv',{})},
+  addFav(id,data){const f=this.favs();f[id]={...data,at:Date.now()};this.s('fv',f);this.log('Saved: '+data.title)},
+  rmFav(id){const f=this.favs();const t=f[id]?.title;delete f[id];this.s('fv',f);if(t)this.log('Removed: '+t)},
+  isFav(id){return!!this.favs()[id]},
+  msgs(){return this.g('ms',[])},
+  addMsg(m){const a=this.msgs();a.unshift({...m,id:Date.now(),at:new Date().toISOString()});this.s('ms',a.slice(0,50));this.log('Sent message to '+m.name)},
+  clrMsgs(){this.s('ms',[])},
+  logView(t,c){const v=this.g('vw',{});v[c]=(v[c]||0)+1;this.s('vw',v);this.s('tv',this.g('tv',0)+1);this.log('Viewed: '+t)},
+  views(){return this.g('vw',{})},
+  totalViews(){return this.g('tv',0)},
+  logVisit(p){this.s('vs',this.g('vs',0)+1);const pv=this.g('pv',{});pv[p]=(pv[p]||0)+1;this.s('pv',pv)},
+  visits(){return this.g('vs',0)},
+  log(a){const h=this.g('hl',[]);h.unshift({a,t:new Date().toISOString()});this.s('hl',h.slice(0,100))},
+  hist(){return this.g('hl',[])},
+  clrHist(){this.s('hl',[])},
+  stats(){return{favs:Object.keys(this.favs()).length,msgs:this.msgs().length,views:this.totalViews(),visits:this.visits()}}
+};
+
+/* ─ Cursor ─ */
+(()=>{
+  if(window.innerWidth<768)return;
+  const C=document.getElementById('C'),r=C.querySelector('.ring'),d=C.querySelector('.dot');
+  let mx=0,my=0,cx=0,cy=0;
+  document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;d.style.left=mx+'px';d.style.top=my+'px';});
+  document.querySelectorAll('a,button,[onclick]').forEach(el=>{
+    el.addEventListener('mouseenter',()=>document.body.classList.add('hov'));
+    el.addEventListener('mouseleave',()=>document.body.classList.remove('hov'));
+  });
+  function loop(){cx+=(mx-cx)*.12;cy+=(my-cy)*.12;r.style.left=cx+'px';r.style.top=cy+'px';requestAnimationFrame(loop);}
+  loop();
+})();
+
+/* ─ Ticker ─ */
+(()=>{
+  const items=['HAMZA EL MERDI','LINGUIST','YOUSSOUFIA · MARRAKECH','ENGLISH STUDIES','LINGUISTICS','TRANSLATION','LITERARY CRITICISM','WEB DEVELOPER','UCA MARRAKECH','GRAMMAR · SYNTAX · SEMANTICS','DIDACTICS · EFL','DISCOURSE ANALYSIS'];
+  const doubled=[...items,...items];
+  document.getElementById('tickerInner').innerHTML=doubled.map(i=>`<div class="ticker-item">${i}</div>`).join('');
+})();
+
+/* ─ Progress bar ─ */
+document.querySelectorAll('.pg').forEach(p=>p.addEventListener('scroll',()=>{
+  if(!p.classList.contains('on'))return;
+  const pct=p.scrollTop/(p.scrollHeight-p.clientHeight)*100;
+  document.getElementById('prog').style.width=pct+'%';
+  document.getElementById('btt').classList.toggle('show',p.scrollTop>250);
+}));
+
+/* ─ Scroll reveal ─ */
+function checkReveal(){
+  document.querySelectorAll('.pg.on .reveal-x:not(.vis)').forEach(el=>{
+    if(el.getBoundingClientRect().top<window.innerHeight*.9)el.classList.add('vis');
+  });
+  document.querySelectorAll('.pg.on .tl-row:not(.vis)').forEach(el=>{
+    if(el.getBoundingClientRect().top<window.innerHeight*.88)el.classList.add('vis');
+  });
+}
+document.querySelectorAll('.pg').forEach(p=>p.addEventListener('scroll',checkReveal));
+
+/* ─ Back to top ─ */
+function btt(){document.querySelector('.pg.on')?.scrollTo({top:0,behavior:'smooth'})}
+
+/* ─ Toast ─ */
+function toast(msg,d=2800){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),d);}
+
+/* ─ Navigation ─ */
+let curPage='home';
+function go(id){
+  if(curPage===id)return;
+  document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.npill').forEach(b=>b.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+  document.querySelector(`.npill[onclick="go('${id}')"]`)?.classList.add('on');
+  document.getElementById(id).scrollTop=0;
+  document.getElementById('navPills').classList.remove('open');
+  document.getElementById('hbg').classList.remove('open');
+  document.getElementById('prog').style.width='0';
+  curPage=id;
+  DB.logVisit(id);
+  updateVisitUI();
+  if(id==='skills')setTimeout(animateSkills,300);
+  if(id==='myspace')setTimeout(refreshMS,150);
+  if(id==='modules')renderMods();
+  setTimeout(checkReveal,200);
+}
+function toggleHbg(){
+  document.getElementById('navPills').classList.toggle('open');
+  document.getElementById('hbg').classList.toggle('open');
+}
+function updateVisitUI(){
+  document.getElementById('sn3').textContent=DB.visits();
+  document.getElementById('msVisitN').textContent=DB.visits();
+}
+
+/* ─ Home counters ─ */
+function animNums(){
+  animN('sn1',14,1200);animN('sn2',3,900);animN('sn3',DB.visits(),700);
+}
+function animN(id,end,dur){
+  const el=document.getElementById(id);if(!el||end===0){if(el)el.textContent=end;return;}
+  let cur=0;const step=end/(dur/16);
+  const t=setInterval(()=>{cur+=step;if(cur>=end){cur=end;clearInterval(t);}el.textContent=Math.floor(cur);},16);
+}
+
+/* ─ Skills animation ─ */
+function animateSkills(){
+  document.querySelectorAll('#skills .sk-item').forEach((el,i)=>{
+    setTimeout(()=>{el.classList.add('vis');},i*60);
+  });
+  setTimeout(()=>{
+    document.querySelectorAll('#skills .sk-fill').forEach(b=>{b.style.width=b.style.getPropertyValue('--w')||'0';});
+  },100);
+  setTimeout(drawRadar,500);
+}
+
+/* ─ Radar ─ */
+function drawRadar(){
+  const cv=document.getElementById('radar');if(!cv?.getContext)return;
+  const ctx=cv.getContext('2d');
+  const w=cv.width,h=cv.height,cx=w/2,cy=h/2,r=Math.min(w,h)/2-36;
+  const labels=['Linguistics','Translation','Literature','Web','Research','Didactics'];
+  const vals=[.93,.88,.85,.72,.84,.87];
+  const n=labels.length;
+  ctx.clearRect(0,0,w,h);
+  for(let ring=1;ring<=4;ring++){
+    ctx.beginPath();
+    for(let i=0;i<n;i++){const a=i*Math.PI*2/n-Math.PI/2;const pr=r*(ring/4);ctx.lineTo(cx+Math.cos(a)*pr,cy+Math.sin(a)*pr);}
+    ctx.closePath();ctx.strokeStyle='rgba(212,160,23,.1)';ctx.lineWidth=1;ctx.stroke();
+  }
+  for(let i=0;i<n;i++){const a=i*Math.PI*2/n-Math.PI/2;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+Math.cos(a)*r,cy+Math.sin(a)*r);ctx.strokeStyle='rgba(212,160,23,.12)';ctx.lineWidth=1;ctx.stroke();}
+  ctx.beginPath();
+  vals.forEach((v,i)=>{const a=i*Math.PI*2/n-Math.PI/2;i===0?ctx.moveTo(cx+Math.cos(a)*r*v,cy+Math.sin(a)*r*v):ctx.lineTo(cx+Math.cos(a)*r*v,cy+Math.sin(a)*r*v);});
+  ctx.closePath();ctx.fillStyle='rgba(212,160,23,.1)';ctx.fill();ctx.strokeStyle='rgba(212,160,23,.55)';ctx.lineWidth=2;ctx.stroke();
+  vals.forEach((v,i)=>{
+    const a=i*Math.PI*2/n-Math.PI/2;
+    const x=cx+Math.cos(a)*r*v,y=cy+Math.sin(a)*r*v;
+    ctx.beginPath();ctx.arc(x,y,4,0,Math.PI*2);ctx.fillStyle='#d4a017';ctx.fill();
+    const lx=cx+Math.cos(a)*(r+22),ly=cy+Math.sin(a)*(r+22);
+    ctx.fillStyle='rgba(240,234,216,.6)';ctx.font='8.5px Space Mono,monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(labels[i],lx,ly);
+  });
+}
+
+/* ─ Module Data ─ */
+const MODS={
+  m1:{title:"General Linguistics",badge:"Linguistics",img:"https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=1200&q=80",gal:["https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=600&q=80","https://images.unsplash.com/photo-1543109740-4bdb38fda756?auto=format&fit=crop&w=600&q=80","https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=600&q=80","https://images.unsplash.com/photo-1457369804613-52c61a468e7d?auto=format&fit=crop&w=600&q=80"],
+    desc:"General Linguistics is the scientific study of language as a human faculty. It explores how languages are structured, how they vary across the world, and what universal properties all human languages share. From Ferdinand de Saussure's structuralism to Chomsky's generative grammar, this module traces the history and core theories of the discipline.",
+    topics:["Phonology & Phonetics","Morphology","Syntax","Semantics & Pragmatics","Language acquisition","Historical linguistics"],apps:["Language teaching","NLP & AI","Translation","Cognitive science","Anthropology"]},
+  m2:{title:"Translation Studies",badge:"Translation",img:"https://images.unsplash.com/photo-1457369804613-52c61a468e7d?auto=format&fit=crop&w=1200&q=80",gal:["https://images.unsplash.com/photo-1543109740-4bdb38fda756?auto=format&fit=crop&w=600&q=80","https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=600&q=80","https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=600&q=80","https://images.unsplash.com/photo-1569098644440-096b4ceb8f50?auto=format&fit=crop&w=600&q=80"],
+    desc:"Translation Studies examines the theory and practice of transferring meaning between languages. It covers equivalence theory, cultural adaptation, domestication vs foreignization strategies, and the role of the translator as a cultural mediator. Special attention is given to literary, technical, and audiovisual translation.",
+    topics:["Equivalence theory","Nida's dynamic equivalence","Domestication & foreignization","Literary translation","Technical translation","Machine translation"],apps:["Professional translation","Subtitling & localization","International publishing","Diplomatic communication","Cross-cultural research"]},
+  m3:{title:"Literary Criticism",badge:"Literature",img:"https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=1200&q=80",gal:["https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=600&q=80","https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=600&q=80","https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=600&q=80","https://images.unsplash.com/photo-1550399105-c4db5fb85c18?auto=format&fit=crop&w=600&q=80"],
+    desc:"Literary Criticism provides the analytical frameworks to read, interpret, and evaluate literary texts. From New Criticism to poststructuralism, from Marxist literary theory to postcolonial perspectives, this module equips students with the theoretical lenses needed to engage deeply with literature as a cultural and aesthetic practice.",
+    topics:["New Criticism & close reading","Structuralism","Poststructuralism & deconstruction","Postcolonial theory","Feminist literary criticism","Reader-response theory"],apps:["Academic literary analysis","Publishing & editing","Cultural criticism","Creative writing","Teaching literature"]},
+  m4:{title:"Didactics & EFL",badge:"Research",img:"https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=1200&q=80",gal:["https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=600&q=80","https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?auto=format&fit=crop&w=600&q=80","https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=600&q=80","https://images.unsplash.com/photo-1580582932707-520aed937b7b?auto=format&fit=crop&w=600&q=80"],
+    desc:"Didactics focuses on the science of teaching English as a Foreign Language (EFL). This module explores methodologies, curriculum design, classroom management, and assessment strategies. It connects second language acquisition theory with practical classroom application, preparing students for effective teaching careers.",
+    topics:["Second language acquisition (SLA)","Communicative Language Teaching (CLT)","Task-Based Language Teaching","Syllabus & curriculum design","Testing & assessment","Technology in EFL"],apps:["EFL/ESL teaching","Curriculum development","Educational research","Language program management","Online teaching"]},
+  m5:{title:"Grammar & Syntax",badge:"Linguistics",img:"https://images.unsplash.com/photo-1543109740-4bdb38fda756?auto=format&fit=crop&w=1200&q=80",gal:["https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=600&q=80","https://images.unsplash.com/photo-1457369804613-52c61a468e7d?auto=format&fit=crop&w=600&q=80","https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=600&q=80","https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=600&q=80"],
+    desc:"Grammar and Syntax examines the rules that govern sentence structure in English. Moving from traditional grammar to generative and functional approaches, this module explores how sentences are constructed, how grammatical categories interact, and how syntactic structures encode meaning in a cross-linguistic perspective.",
+    topics:["Phrase structure rules","Transformational grammar","Generative syntax (Chomsky)","Functional grammar","English grammar analysis","Cross-linguistic syntax"],apps:["Language teaching","Grammar checkers","NLP parsing","Linguistic research","Proofreading"]},
+  m6:{title:"Semantics & Pragmatics",badge:"Linguistics",img:"https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1200&q=80",gal:["https://images.unsplash.com/photo-1457369804613-52c61a468e7d?auto=format&fit=crop&w=600&q=80","https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=600&q=80","https://images.unsplash.com/photo-1543109740-4bdb38fda756?auto=format&fit=crop&w=600&q=80","https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=600&q=80"],
+    desc:"Semantics studies how meaning is encoded in language — from individual word senses to complex sentence meanings. Pragmatics extends this to how context shapes interpretation, exploring speech acts, implicature, presupposition, and Gricean principles. Together they reveal the richness of communicative meaning.",
+    topics:["Lexical semantics","Componential analysis","Speech act theory (Austin, Searle)","Grice's maxims","Deixis & reference","Discourse coherence"],apps:["AI language models","Sentiment analysis","Conversation analysis","Translation","Rhetoric & communication"]},
+  m7:{title:"Discourse Analysis",badge:"Linguistics",img:"https://images.unsplash.com/photo-1569098644440-096b4ceb8f50?auto=format&fit=crop&w=1200&q=80",gal:["https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=600&q=80","https://images.unsplash.com/photo-1543109740-4bdb38fda756?auto=format&fit=crop&w=600&q=80","https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=600&q=80","https://images.unsplash.com/photo-1457369804613-52c61a468e7d?auto=format&fit=crop&w=600&q=80"],
+    desc:"Discourse Analysis goes beyond sentence-level linguistics to examine how language functions in larger units of communication. It investigates spoken conversation, written texts, media language, and political discourse — asking how meaning, power, and identity are constructed through language in social contexts.",
+    topics:["Conversation analysis (CA)","Critical Discourse Analysis (CDA)","Genre analysis","Narrative discourse","Cohesion & coherence","Media & political discourse"],apps:["Media criticism","Political analysis","Social research","Journalism","Teaching academic writing"]},
+  m8:{title:"Sociolinguistics",badge:"Linguistics",img:"https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1200&q=80",gal:["https://images.unsplash.com/photo-1543109740-4bdb38fda756?auto=format&fit=crop&w=600&q=80","https://images.unsplash.com/photo-1457369804613-52c61a468e7d?auto=format&fit=crop&w=600&q=80","https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=600&q=80","https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=600&q=80"],
+    desc:"Sociolinguistics explores the relationship between language and society. It examines how social factors such as class, gender, ethnicity, and geography influence language variation, language change, and language attitudes. Key topics include bilingualism, code-switching, diglossia, and the politics of language.",
+    topics:["Language variation & dialects","Code-switching","Bilingualism & multilingualism","Language and identity","Language policy","Diglossia"],apps:["Language policy","Multicultural education","Immigration & integration","Social research","Community linguistics"]},
+  m9:{title:"Research Methodology",badge:"Research",img:"https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=1200&q=80",gal:["https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=600&q=80","https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=600&q=80","https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=600&q=80","https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=600&q=80"],
+    desc:"Research Methodology equips students with the tools to conduct rigorous academic research in linguistics, literature, and related fields. It covers qualitative and quantitative approaches, data collection and analysis, academic writing conventions, and the ethical dimensions of research.",
+    topics:["Qualitative vs quantitative research","Designing a research project","Literature review","Data collection methods","Academic writing & citation","Research ethics"],apps:["Academic thesis writing","Linguistic fieldwork","Survey design","Publishing research","Corpus-based studies"]},
+  m10:{title:"English Literature",badge:"Literature",img:"https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=1200&q=80",gal:["https://images.unsplash.com/photo-1550399105-c4db5fb85c18?auto=format&fit=crop&w=600&q=80","https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=600&q=80","https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=600&q=80","https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=600&q=80"],
+    desc:"English Literature surveys the rich tradition of writing in the English language — from Old English and the Renaissance through Romanticism, Modernism, and contemporary postcolonial fiction. Students develop skills in close reading, contextual analysis, and critical engagement with canonical and non-canonical texts.",
+    topics:["The canon & its critique","Shakespeare & Renaissance drama","Romantic poetry","The Victorian novel","Modernist literature","Postcolonial fiction"],apps:["Teaching literature","Publishing","Cultural journalism","Creative writing","Literary translation"]},
+  m11:{title:"Stylistics",badge:"Literature",img:"https://images.unsplash.com/photo-1550399105-c4db5fb85c18?auto=format&fit=crop&w=1200&q=80",gal:["https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=600&q=80","https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=600&q=80","https://images.unsplash.com/photo-1457369804613-52c61a468e7d?auto=format&fit=crop&w=600&q=80","https://images.unsplash.com/photo-1543109740-4bdb38fda756?auto=format&fit=crop&w=600&q=80"],
+    desc:"Stylistics sits at the intersection of linguistics and literary studies. It applies linguistic analysis tools — phonology, grammar, lexical choice — to literary texts to explain how style creates meaning and aesthetic effect. Stylistics gives a rigorous, evidence-based foundation to literary interpretation.",
+    topics:["Foregrounding & deviation","Register & style","Figurative language","Point of view & narrative voice","Cognitive stylistics","Corpus stylistics"],apps:["Literary analysis","Creative writing coaching","Rhetorical analysis","Advertising & copywriting","Academic publishing"]},
+  m12:{title:"Web Development",badge:"Technology",img:"https://images.unsplash.com/photo-1461749280684-dccba630e2f6?auto=format&fit=crop&w=1200&q=80",gal:["https://images.unsplash.com/photo-1515879218367-8466d910aaa4?auto=format&fit=crop&w=600&q=80","https://images.unsplash.com/photo-1542831371-29b0f74f9713?auto=format&fit=crop&w=600&q=80","https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=600&q=80","https://images.unsplash.com/photo-1461749280684-dccba630e2f6?auto=format&fit=crop&w=600&q=80"],
+    desc:"Self-taught web developer. Building modern, responsive web interfaces that bridge linguistic knowledge with technology — educational tools, digital portfolios, and language-learning platforms using HTML, CSS, JavaScript, and backend services like Supabase.",
+    topics:["HTML5 & CSS3","Responsive design","JavaScript & DOM","APIs & Supabase","UI/UX principles","Git version control"],apps:["Language learning platforms","Digital portfolios","Educational technology","NLP interfaces","Research data tools"]},
+  m13:{title:"Applied Linguistics",badge:"Linguistics",img:"https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?auto=format&fit=crop&w=1200&q=80",gal:["https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=600&q=80","https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=600&q=80","https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=600&q=80","https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=600&q=80"],
+    desc:"Applied Linguistics uses insights from linguistic theory to address real-world problems — particularly in language teaching, language policy, translation, and communication. It connects theoretical linguistics with practical challenges faced by teachers, translators, and communication professionals.",
+    topics:["Language and education","Error analysis & interlanguage","Language policy & planning","Corpus linguistics","Language and technology","Cross-cultural communication"],apps:["EFL teaching","Language policy advice","Corporate communication","Translation quality","Language testing"]},
+  m14:{title:"Phonetics & Phonology",badge:"Linguistics",img:"https://images.unsplash.com/photo-1493711662062-fa541adb3fc8?auto=format&fit=crop&w=1200&q=80",gal:["https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=600&q=80","https://images.unsplash.com/photo-1543109740-4bdb38fda756?auto=format&fit=crop&w=600&q=80","https://images.unsplash.com/photo-1457369804613-52c61a468e7d?auto=format&fit=crop&w=600&q=80","https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=600&q=80"],
+    desc:"Phonetics studies the physical properties of speech sounds — how they are produced, transmitted, and perceived. Phonology studies how sounds function within language systems as abstract units. Together they form the foundation of our understanding of the sound structure of English and other languages.",
+    topics:["Articulatory phonetics","The IPA","Phonological rules","Stress & intonation","English pronunciation","Contrastive phonology"],apps:["Pronunciation teaching","Speech technology","Language documentation","Accent coaching","Text-to-speech"]}
+};
+const icons={Linguistics:"📖",Translation:"🌍",Literature:"✍️",Research:"🔬",Technology:"💻"};
+
+/* ─ Render Modules ─ */
+let curFilter='all',curSearch='';
+function renderMods(f,s){
+  if(f!==undefined)curFilter=f;if(s!==undefined)curSearch=s;
+  const grid=document.getElementById('moGrid');grid.innerHTML='';
+  const favs=DB.favs();
+  const keys=Object.keys(MODS);
+  const filtered=keys.filter(k=>{
+    const m=MODS[k];
+    const cm=curFilter==='all'||m.badge===curFilter;
+    const sm=!curSearch||m.title.toLowerCase().includes(curSearch.toLowerCase())||m.badge.toLowerCase().includes(curSearch.toLowerCase())||m.desc.toLowerCase().includes(curSearch.toLowerCase());
+    return cm&&sm;
+  });
+  if(!filtered.length){grid.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:60px;font-family:var(--F3);font-size:.72rem;letter-spacing:2px;color:var(--muted);text-transform:uppercase">No modules found</div>';document.getElementById('mcount').textContent=0;return;}
+  filtered.forEach((k,idx)=>{
+    const m=MODS[k];const ic=icons[m.badge]||'📚';const fav=!!favs[k];
+    const el=document.createElement('div');
+    el.className='mc'+(fav?' favorited':'');el.dataset.id=k;
+    el.innerHTML=`
+      <div class="mc-thumb" style="background-image:url('${m.img}')">
+        <div class="mc-num">${String(idx+1).padStart(2,'0')}</div>
+        <div class="mc-badge">${m.badge}</div>
+      </div>
+      <div class="mc-body">
+        <div class="mc-title">${ic} ${m.title}</div>
+        <div class="mc-desc">${m.desc.substring(0,110)}...</div>
+        <div class="mc-footer">
+          <button class="mc-fav" onclick="event.stopPropagation();toggleFav('${k}')">${fav?'★':'☆'}</button>
+          <span class="mc-arrow">READ →</span>
+        </div>
+      </div>`;
+    el.addEventListener('click',()=>openMod(k));
+    grid.appendChild(el);
+    setTimeout(()=>el.classList.add('vis'),idx*55);
+  });
+  document.getElementById('mcount').textContent=filtered.length;
+}
+function filterMod(f,btn){document.querySelectorAll('.mf').forEach(b=>b.classList.remove('on'));btn.classList.add('on');renderMods(f,curSearch);}
+function searchMods(){renderMods(curFilter,document.getElementById('moSearch').value);}
+
+/* ─ Open/Close Module ─ */
+function openMod(id){
+  const m=MODS[id];if(!m)return;
+  DB.logView(m.title,m.badge);
+  const fav=DB.isFav(id);
+  const gal=(m.gal||[]).map(u=>`<div class="mg-img" style="background-image:url('${u}')"></div>`).join('');
+  document.getElementById('mModalInner').innerHTML=`
+    <div class="modal-left" style="background-image:url('${m.img}')"></div>
+    <div class="modal-right">
+      <div class="modal-overline">${m.badge}</div>
+      <div class="modal-title">${m.title}</div>
+      ${gal?`<div class="modal-gallery">${gal}</div>`:''}
+      <p class="modal-desc">${m.desc}</p>
+      <div class="modal-sect"><h4>Key Topics</h4><div class="modal-tags">${(m.topics||[]).map(t=>`<span class="modal-tag">${t}</span>`).join('')}</div></div>
+      <div class="modal-sect"><h4>Applications</h4><div class="modal-tags">${(m.apps||[]).map(a=>`<span class="modal-tag">${a}</span>`).join('')}</div></div>
+      <button class="modal-fav ${fav?'on':''}" id="mfBtn" onclick="toggleFav('${id}')">
+        ${fav?'★ SAVED':'☆ SAVE TO FAVORITES'}
+      </button>
+    </div>`;
+  document.getElementById('mModal').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function closeMod(){document.getElementById('mModal').classList.remove('open');document.body.style.overflow='';}
+function handleModalBg(e){if(e.target===document.getElementById('mModal'))closeMod();}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMod();});
+
+function toggleFav(id){
+  const m=MODS[id];if(!m)return;
+  const wasFav=DB.isFav(id);
+  if(wasFav){DB.rmFav(id);}else{DB.addFav(id,{title:m.title,badge:m.badge,img:m.img,desc:m.desc.substring(0,130)+'...'});}
+  updateFavBadge();
+  // Update modal button
+  const mfBtn=document.getElementById('mfBtn');
+  if(mfBtn){const now=DB.isFav(id);mfBtn.className='modal-fav'+(now?' on':'');mfBtn.textContent=now?'★ SAVED':'☆ SAVE TO FAVORITES';}
+  // Update grid card
+  const card=document.querySelector(`.mc[data-id="${id}"]`);
+  if(card){const now=DB.isFav(id);card.classList.toggle('favorited',now);const favBtn=card.querySelector('.mc-fav');if(favBtn)favBtn.textContent=now?'★':'☆';}
+  toast(wasFav?'Removed from favorites':'★ Saved to favorites!');
+}
+function updateFavBadge(){
+  const n=Object.keys(DB.favs()).length;
+  const el=document.getElementById('fbadge');if(el)el.textContent='★'+n;
+}
+
+/* ─ Contact Form ─ */
+function updateCnt(){document.getElementById('fCnt').textContent=Math.min(document.getElementById('fm').value.length,500);}
+
+async function sendMsg(e){
+  e.preventDefault();
+  const name=document.getElementById('fn').value.trim();
+  const email=document.getElementById('fe').value.trim();
+  const subj=document.getElementById('fs').value;
+  const body=document.getElementById('fm').value.trim();
+  const errEl=document.getElementById('fErr');
+  const btn=document.getElementById('fBtn');
+  errEl.style.display='none';
+  if(!name||!email||!body){errEl.textContent='Please fill all required fields.';errEl.style.display='block';return;}
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){errEl.textContent='Please enter a valid email address.';errEl.style.display='block';return;}
+  btn.disabled=true;btn.textContent='SENDING...';
+  let cloud=false;
+  if(sb&&sbOk){
+    try{const{error}=await sb.from('messages').insert([{name,email,subject:subj,body}]);if(error)throw error;cloud=true;}
+    catch{sbOk=false;setSbUI(false);}
+  }
+  DB.addMsg({name,email,subject:subj,body,source:cloud?'cloud':'local'});
+  document.getElementById('fOk').style.display='block';
+  document.getElementById('cForm').reset();
+  document.getElementById('fCnt').textContent='0';
+  updateFavBadge();
+  setTimeout(()=>document.getElementById('fOk').style.display='none',5000);
+  toast(cloud?'✓ Saved to Supabase cloud!':'✓ Message saved locally');
+  btn.disabled=false;btn.textContent='SEND MESSAGE';
+}
+
+/* ─ My Space ─ */
+function refreshMS(){
+  const s=DB.stats();
+  document.getElementById('msFavN').textContent=s.favs;
+  document.getElementById('msMsgN').textContent=s.msgs;
+  document.getElementById('msViewN').textContent=s.views;
+  document.getElementById('msVisitN').textContent=s.visits;
+  renderFavs();renderMsgs();renderHist();renderAn();updateFavBadge();
+}
+function msTab(id,btn){
+  document.querySelectorAll('.ms-tab').forEach(t=>t.classList.remove('on'));
+  btn.classList.add('on');
+  document.querySelectorAll('.ms-pane').forEach(p=>p.classList.remove('on'));
+  document.getElementById('pane-'+id).classList.add('on');
+  if(id==='analytics')setTimeout(renderAn,80);
+}
+function renderFavs(){
+  const grid=document.getElementById('favGrid');
+  const favs=DB.favs();const keys=Object.keys(favs);
+  if(!keys.length){grid.innerHTML='<div class="ms-empty">No favorites yet — click ☆ on any module</div>';return;}
+  grid.innerHTML=keys.map(k=>{const f=favs[k];return`<div class="fv"><div class="fv-thumb" style="background-image:url('${f.img}')"></div><div class="fv-body"><div class="fv-title">${f.title}</div><div class="fv-desc">${f.desc}</div><button class="fv-rm" onclick="rmFav('${k}')">REMOVE</button></div></div>`;}).join('');
+}
+function rmFav(id){DB.rmFav(id);updateFavBadge();refreshMS();const c=document.querySelector(`.mc[data-id="${id}"]`);if(c){c.classList.remove('favorited');const b=c.querySelector('.mc-fav');if(b)b.textContent='☆';}toast('Removed from favorites');}
+function renderMsgs(){
+  const grid=document.getElementById('msgGrid');const msgs=DB.msgs();
+  if(!msgs.length){grid.innerHTML='<div class="ms-empty">No messages yet</div>';return;}
+  grid.innerHTML=msgs.map(m=>{const t=new Date(m.at).toLocaleString();const src=m.source==='cloud'?'<span class="mi-src cl">☁ Cloud</span>':'<span class="mi-src lo">💾 Local</span>';
+  return`<div class="mi"><div class="mi-top"><div><div class="mi-from">${m.name} ${src}</div><div class="mi-subj">${m.subject||'(no subject)'}</div></div><div class="mi-time">${t}</div></div><div class="mi-body">${m.body}</div><button class="mi-del" onclick="delMsg(${m.id})">🗑</button></div>`;}).join('');
+}
+function delMsg(id){DB.s('ms',DB.msgs().filter(m=>m.id!==id));refreshMS();toast('Deleted');}
+function clearMsgs(){DB.clrMsgs();refreshMS();toast('Cleared');}
+function renderHist(){
+  const list=document.getElementById('histList');const h=DB.hist();
+  if(!h.length){list.innerHTML='<div class="ms-empty">No activity yet</div>';return;}
+  list.innerHTML=h.slice(0,60).map(e=>`<div class="hi"><div class="hi-tick"></div><div class="hi-text">${e.a}</div><div class="hi-t">${new Date(e.t).toLocaleString()}</div></div>`).join('');
+}
+function clearHist(){DB.clrHist();renderHist();toast('History cleared');}
+function renderAn(){
+  const s=DB.stats();
+  document.getElementById('anGrid').innerHTML=[
+    {n:s.visits,l:'PAGE VISITS',tr:'Active'},
+    {n:s.views,l:'MODULE VIEWS',tr:'Tracked'},
+    {n:s.favs,l:'FAVORITES',tr:'★ Saved'},
+    {n:s.msgs,l:'MESSAGES',tr:sbOk?'☁ Cloud':'💾 Local'},
+  ].map(c=>`<div class="an-card"><div class="an-n">${c.n}</div><div class="an-l">${c.l}</div><div class="an-tr">${c.tr}</div></div>`).join('');
+  const v=DB.views();const cats=['Linguistics','Translation','Literature','Research','Technology'];
+  const max=Math.max(...cats.map(c=>v[c]||0),1);
+  document.getElementById('anBars').innerHTML=cats.map(c=>{const val=v[c]||0;const pct=Math.round(val/max*100);
+  return`<div class="an-row"><div class="an-rl">${c}</div><div class="an-rg"><div class="an-rf" style="width:0" data-w="${pct}%"></div></div><div class="an-rv">${val}</div></div>`;}).join('');
+  setTimeout(()=>document.querySelectorAll('.an-rf').forEach(b=>{b.style.width=b.dataset.w;}),80);
+}
+
+/* ─ Translations ─ */
+let curLang='en';
+const T={
+  en:{tag:"Linguist · Translator · Developer · Youssoufia, MA",htitle:"Licence in English Studies — Linguistics<br>Université Cadi Ayyad, Marrakech",hdesc:"Graduate linguist specializing in the architecture of language. Passionate about translation theory, literary criticism, and digital tools that bridge human languages.",btn1:"EXPLORE MODULES",btn2:"CONTACT ME",hc_label:"Academic Profile · 2025",hcs1:"Field",hcs2:"Degree",hcs3:"University",hcs4:"Modules",hcb_lang:"Languages",hcb_ling:"Linguistics",hcb_trans:"Translation",hcb_web:"Web Dev",ss1:"Core Modules",ss2:"Languages Spoken",ss3:"Page Visits",ss4:"Intellectual Curiosity",scroll:"Scroll",ab_over:"About · Hamza El Merdi",ab_over2:"My Story",ab_h:"Language, Literature & Code",ab_p1:"I am Hamza El Merdi, born and raised in Youssoufia, Morocco. I pursued my higher education at Université Cadi Ayyad in Marrakech, where I earned a Licence in English Studies with a specialization in Linguistics.",ab_p2:"My academic journey gave me a deep understanding of language as a system — from the smallest phonological units to the broad patterns of discourse and pragmatics.",ab_p3:"Beyond linguistics, I have a genuine passion for web development and programming. Combining language expertise with digital skills opens new frontiers in NLP and educational technology.",ab_quote:'"The limits of my language mean the limits of my world."',btn_mods:"VIEW MODULES",btn_sk:"MY SKILLS",ib1t:"Linguistic Expertise",ib1d:"Deep study of phonology, morphology, syntax, semantics, and pragmatics.",ib2t:"Translation & Mediation",ib2d:"Trained in translation theory — bridging Arabic, French, and English.",ib3t:"Literary Studies",ib3d:"Critical engagement with English and world literature from Renaissance to postcolonial.",ib4t:"Technology & Language",ib4d:"Self-taught HTML, CSS, JavaScript. Interested in NLP and corpus tools.",tl1t:"Origins & Baccalauréat",tl1d:"Born and raised in Youssoufia.",tl2t:"Licence — English Studies",tl2d:"Université Cadi Ayyad — Linguistics, Translation, Literary Criticism.",tl3t:"Web Development",tl3d:"HTML, CSS, JavaScript, Supabase.",tl4t:"Research & Digital Projects",tl4d:"Advanced linguistic research and web projects.",mod_sub:"14 academic modules · English Studies · UCA Marrakech",fall:"All",sk_sub:"A blend of humanistic scholarship and digital craftsmanship",sk_ling_title:"Language Sciences",sk1:"General Linguistics",sk2:"Translation Theory",sk3:"Literary Criticism",sk4:"Discourse Analysis",sk5:"Didactics / EFL",sk6:"Academic Research",sk7:"Academic Writing",sk_tech_title:"Digital Skills",sk8:"Responsive Design",sk9:"Corpus Linguistics Tools",sk_tools_t:"Tools",l1:"ARABIC",l1l:"Native",l2:"ENGLISH",l2l:"Advanced / Licence",l3:"FRENCH",l3l:"Fluent",ct_sub:"For research collaborations, translation projects, web development, or a conversation about language.",ct_el:"Email",ct_ll:"Location",ct_ul:"University",ct_fl:"Also Into",ct_form_h:"SEND A MESSAGE",fl_name:"Name",fl_email:"Email",fl_subj:"Subject",fl_msg:"Message",fo1:"Select...",fo2:"Research Collaboration",fo3:"Translation Project",fo4:"Teaching / EFL",fo5:"Web / Tech",fo6:"Other",f_send:"SEND MESSAGE",f_ok:"✓ Message sent! I will reply soon.",ms1:"Favorites",ms2:"Messages",ms3:"Module Views",ms4:"Page Visits"},
+  fr:{tag:"Linguiste · Traducteur · Développeur · Youssoufia, MA",htitle:"Licence en études anglaises — Linguistique<br>Université Cadi Ayyad, Marrakech",hdesc:"Linguiste diplômé spécialisé dans l'architecture du langage. Passionné par la traductologie, la critique littéraire et les outils numériques.",btn1:"EXPLORER LES MODULES",btn2:"ME CONTACTER",hc_label:"Profil académique · 2025",hcs1:"Domaine",hcs2:"Diplôme",hcs3:"Université",hcs4:"Modules",hcb_lang:"Langues",hcb_ling:"Linguistique",hcb_trans:"Traduction",hcb_web:"Web Dev",ss1:"Modules",ss2:"Langues",ss3:"Visites",ss4:"Curiosité",scroll:"Défiler",ab_over:"À propos · Hamza El Merdi",ab_over2:"Mon histoire",ab_h:"Langue, Littérature & Code",ab_p1:"Je suis Hamza El Merdi, né et élevé à Youssoufia, Maroc. J'ai obtenu ma licence en études anglaises spécialité linguistique à l'Université Cadi Ayyad de Marrakech.",ab_p2:"Mon parcours académique m'a donné une compréhension approfondie du langage en tant que système.",ab_p3:"Au-delà de la linguistique, je suis passionné par le développement web et la programmation.",ab_quote:"« Les limites de mon langage signifient les limites de mon monde. »",btn_mods:"VOIR LES MODULES",btn_sk:"MES COMPÉTENCES",ib1t:"Expertise linguistique",ib1d:"Étude approfondie de la phonologie, morphologie, syntaxe, sémantique.",ib2t:"Traduction & Médiation",ib2d:"Formation en théorie de la traduction.",ib3t:"Études littéraires",ib3d:"Analyse critique de la littérature anglaise et mondiale.",ib4t:"Technologie & Langage",ib4d:"HTML, CSS, JavaScript. Intéressé par le TAL et les outils corpus.",tl1t:"Origines & Baccalauréat",tl1d:"Né et élevé à Youssoufia.",tl2t:"Licence études anglaises",tl2d:"Université Cadi Ayyad — Linguistique, Traduction, Critique littéraire.",tl3t:"Développement web",tl3d:"HTML, CSS, JavaScript, Supabase.",tl4t:"Recherche & Projets numériques",tl4d:"Recherche avancée en linguistique et projets web.",mod_sub:"14 modules · Études anglaises · UCA Marrakech",fall:"Tout",sk_sub:"Mélange de savoir humaniste et de compétences numériques",sk_ling_title:"Sciences du langage",sk1:"Linguistique générale",sk2:"Théorie de la traduction",sk3:"Critique littéraire",sk4:"Analyse du discours",sk5:"Didactique / FLE",sk6:"Recherche académique",sk7:"Rédaction académique",sk_tech_title:"Compétences numériques",sk8:"Design responsive",sk9:"Outils corpus",sk_tools_t:"Outils",l1:"ARABE",l1l:"Langue maternelle",l2:"ANGLAIS",l2l:"Avancé / Licence",l3:"FRANÇAIS",l3l:"Courant",ct_sub:"Pour toute collaboration en recherche, traduction ou développement web.",ct_el:"Email",ct_ll:"Localisation",ct_ul:"Université",ct_fl:"Aussi",ct_form_h:"ENVOYER UN MESSAGE",fl_name:"Nom",fl_email:"Email",fl_subj:"Sujet",fl_msg:"Message",fo1:"Choisir...",fo2:"Collaboration de recherche",fo3:"Projet de traduction",fo4:"Enseignement",fo5:"Web / Tech",fo6:"Autre",f_send:"ENVOYER",f_ok:"✓ Message envoyé avec succès.",ms1:"Favoris",ms2:"Messages",ms3:"Vues modules",ms4:"Visites"},
+  ar:{tag:"لغوي · مترجم · مطور · اليوسفية",htitle:"إجازة في الدراسات الإنجليزية — اللسانيات<br>جامعة القاضي عياض، مراكش",hdesc:"خريج لسانيات متخصص في بنية اللغة. شغوف بنظرية الترجمة والنقد الأدبي والأدوات الرقمية التي تربط اللغات البشرية.",btn1:"استكشاف المواد",btn2:"تواصل معي",hc_label:"الملف الأكاديمي · 2025",hcs1:"التخصص",hcs2:"الشهادة",hcs3:"الجامعة",hcs4:"المواد",hcb_lang:"اللغات",hcb_ling:"اللسانيات",hcb_trans:"الترجمة",hcb_web:"الويب",ss1:"المواد",ss2:"اللغات",ss3:"الزيارات",ss4:"الفضول",scroll:"مرر",ab_over:"من أنا · حمزة المردي",ab_over2:"قصتي",ab_h:"اللغة والأدب والكود",ab_p1:"أنا حمزة المردي، من مدينة اليوسفية بالمغرب. أتممت دراساتي العليا بجامعة القاضي عياض بمراكش، حيث حصلت على الإجازة في الدراسات الإنجليزية تخصص لسانيات.",ab_p2:"منحني مساري الأكاديمي فهماً عميقاً للغة بوصفها نظاماً متكاملاً.",ab_p3:"إلى جانب اللسانيات، أحمل شغفاً بتطوير الويب والبرمجة.",ab_quote:"«حدود لغتي تعني حدود عالمي.»",btn_mods:"عرض المواد",btn_sk:"مهاراتي",ib1t:"الخبرة اللسانية",ib1d:"دراسة معمقة في الصوتيات والصرف والنحو والدلالة.",ib2t:"الترجمة والوساطة",ib2d:"التدريب على نظرية الترجمة — ربط العربية والفرنسية والإنجليزية.",ib3t:"الدراسات الأدبية",ib3d:"التحليل النقدي للأدب الإنجليزي والعالمي.",ib4t:"التكنولوجيا واللغة",ib4d:"HTML وCSS وJavaScript. الاهتمام بمعالجة اللغات الطبيعية.",tl1t:"الأصول والبكالوريا",tl1d:"نشأت وترعرعت في اليوسفية.",tl2t:"الإجازة — الدراسات الإنجليزية",tl2d:"جامعة القاضي عياض — اللسانيات والترجمة والنقد الأدبي.",tl3t:"تطوير الويب",tl3d:"HTML وCSS وJavaScript وSupabase.",tl4t:"البحث والمشاريع الرقمية",tl4d:"بحث متقدم في اللسانيات ومشاريع ويب.",mod_sub:"14 وحدة · الدراسات الإنجليزية · جامعة القاضي عياض",fall:"الكل",sk_sub:"مزيج فريد بين العلوم الإنسانية والمهارات الرقمية",sk_ling_title:"علوم اللغة",sk1:"اللسانيات العامة",sk2:"نظرية الترجمة",sk3:"النقد الأدبي",sk4:"تحليل الخطاب",sk5:"الديداكتيك",sk6:"البحث الأكاديمي",sk7:"الكتابة الأكاديمية",sk_tech_title:"المهارات الرقمية",sk8:"التصميم المتجاوب",sk9:"أدوات اللسانيات",sk_tools_t:"الأدوات",l1:"العربية",l1l:"اللغة الأم",l2:"الإنجليزية",l2l:"متقدم / إجازة",l3:"الفرنسية",l3l:"بطلاقة",ct_sub:"للتعاون البحثي أو مشاريع الترجمة أو تطوير الويب أو مجرد حديث عن اللغة.",ct_el:"البريد الإلكتروني",ct_ll:"الموقع",ct_ul:"الجامعة",ct_fl:"أيضاً",ct_form_h:"أرسل رسالة",fl_name:"الاسم",fl_email:"البريد الإلكتروني",fl_subj:"الموضوع",fl_msg:"الرسالة",fo1:"اختر...",fo2:"تعاون بحثي",fo3:"مشروع ترجمة",fo4:"التدريس",fo5:"ويب / تقنية",fo6:"أخرى",f_send:"إرسال",f_ok:"✓ تم إرسال الرسالة بنجاح.",ms1:"المفضلة",ms2:"الرسائل",ms3:"مشاهدات الوحدات",ms4:"الزيارات"}
+};
+function lang(l){
+  curLang=l;
+  document.querySelectorAll('.lbtn').forEach(b=>b.classList.remove('on'));
+  document.querySelector(`.lbtn[onclick="lang('${l}')"]`).classList.add('on');
+  const t=T[l]||T.en;
+  document.querySelectorAll('[data-k]').forEach(el=>{const k=el.getAttribute('data-k');if(t[k]!==undefined)el.innerHTML=t[k];});
+  document.documentElement.lang=l==='ar'?'ar':l;
+  document.documentElement.dir=l==='ar'?'rtl':'ltr';
+  document.body.classList.toggle('ar',l==='ar');
+  if(curPage==='modules')renderMods();
+}
+
+/* ─ reveal-x animation ─ */
+const rxStyle=document.createElement('style');
+rxStyle.textContent=`.reveal-x{opacity:0;transform:translateX(-18px);transition:opacity .55s ease,transform .55s ease}.reveal-x.vis{opacity:1;transform:translateX(0)}`;
+document.head.appendChild(rxStyle);
+
+/* ─ INIT ─ */
+window.addEventListener('DOMContentLoaded',async()=>{
+  // loader
+  const lb=document.getElementById('lbar');
+  setTimeout(()=>lb.style.width='280px',80);
+  setTimeout(()=>{document.getElementById('loader').classList.add('gone');},2000);
+  // home counters after load
+  setTimeout(animNums,2200);
+  updateFavBadge();
+  renderMods();
+  await initSB();
+});
+</script>
+</body>
+</html>
